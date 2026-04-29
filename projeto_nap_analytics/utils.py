@@ -33,9 +33,8 @@ def aplicar_jornada(df):
 
 def calcular_scores_dataframe(df):
     # ============================================================
-    # SCORES QUE JÁ FUNCIONAVAM (MANTIDOS)
+    # PERCEPÇÃO (score_percepcao)
     # ============================================================
-    # Percepção (média de 4 perguntas)
     col_perc1 = "Já senti necessidade de apoio emocional durante a graduação."
     col_perc2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
     col_perc3 = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
@@ -47,7 +46,24 @@ def calcular_scores_dataframe(df):
     
     df['score_percepcao'] = df[[col_perc1, col_perc2, col_perc3, col_perc4]].mean(axis=1)
     
-    # Intenção (já funcionava)
+    # ============================================================
+    # NECESSIDADE (média das perguntas 1, 2 e 4 - sem suporte)
+    # ============================================================
+    df['score_necessidade'] = df[[col_perc1, col_perc2, col_perc4]].mean(axis=1)
+    
+    # ============================================================
+    # SUPORTE (apenas a pergunta 3)
+    # ============================================================
+    df['score_suporte'] = df[col_perc3]
+    
+    # ============================================================
+    # GAP
+    # ============================================================
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    
+    # ============================================================
+    # INTENÇÃO
+    # ============================================================
     col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
     col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
     col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
@@ -58,7 +74,9 @@ def calcular_scores_dataframe(df):
     
     df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
     
-    # Experiência (quem usou)
+    # ============================================================
+    # EXPERIÊNCIA (apenas para quem usou - mantido para compatibilidade)
+    # ============================================================
     col_exp1 = "O atendimento do NAP (Núcleo de Apoio Psicopedagógico) atendeu às minhas expectativas."
     col_exp2 = "Senti que fui ouvido(a) e compreendido(a) no atendimento."
     
@@ -68,7 +86,9 @@ def calcular_scores_dataframe(df):
     
     df['score_experiencia'] = df[[col_exp1, col_exp2]].mean(axis=1)
     
-    # Acesso (quem usou)
+    # ============================================================
+    # ACESSO (apenas para quem usou)
+    # ============================================================
     col_acesso1 = "Eu consegui acessar o NAP (Núcleo de Apoio Psicopedagógico)  com facilidade."
     col_acesso2 = "Foi fácil acessar o NAP (Núcleo de Apoio Psicopedagógico) para agendar e verificar horários."
     
@@ -78,17 +98,22 @@ def calcular_scores_dataframe(df):
     
     df['score_acesso'] = df[[col_acesso1, col_acesso2]].mean(axis=1)
     
-    # ============================================================
-    # NOVOS SCORES (Necessidade e Suporte)
-    # ============================================================
-    # Necessidade = média das 3 primeiras perguntas de percepção
-    df['score_necessidade'] = df[[col_perc1, col_perc2, col_perc4]].mean(axis=1)
+    # Preencher NaNs com a média da coluna (para não quebrar o dashboard)
+    for score in ['score_percepcao', 'score_necessidade', 'score_suporte', 'score_gap', 
+                  'score_intencao', 'score_experiencia', 'score_acesso']:
+        if score in df.columns:
+            media = df[score].mean()
+            df[score] = df[score].fillna(media)
     
-    # Suporte = terceira pergunta de percepção
-    df['score_suporte'] = df[col_perc3]
-    
-    # Gap
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    # Debug
+    print("=" * 50)
+    print("📊 SCORES CALCULADOS:")
+    print(f"   score_percepcao: {df['score_percepcao'].mean():.1f}")
+    print(f"   score_necessidade: {df['score_necessidade'].mean():.1f}")
+    print(f"   score_suporte: {df['score_suporte'].mean():.1f}")
+    print(f"   score_gap: {df['score_gap'].mean():.1f}")
+    print(f"   score_intencao: {df['score_intencao'].mean():.1f}")
+    print("=" * 50)
     
     return df
 
