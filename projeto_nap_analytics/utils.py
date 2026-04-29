@@ -1,4 +1,4 @@
-# projeto_nap_analytics/utils.py
+# utils.py
 import sys
 import os
 import pandas as pd
@@ -8,6 +8,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config.config import (
     PATH_RAW, 
+    NECESSIDADE_COLS,
+    SUPORTE_COLS,
     PERCEPCAO_COLS, 
     INTENCAO_COLS, 
     EXPERIENCIA_COLS, 
@@ -22,7 +24,6 @@ def carregar_dados_brutos():
     return df
 
 def classificar_jornada(valor):
-    """3 status corretos do NAP"""
     if pd.isna(valor):
         return "Indefinido"
     if "Não conheço" in str(valor):
@@ -41,15 +42,42 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
+    # Converte todas as colunas numéricas
     todas_colunas = PERCEPCAO_COLS + INTENCAO_COLS + EXPERIENCIA_COLS + ACESSO_COLS
     for col in todas_colunas:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
+    # ============================================
+    # SCORE DE NECESSIDADE (do aluno)
+    # ============================================
+    necessidade_exist = [c for c in NECESSIDADE_COLS if c in df.columns]
+    if necessidade_exist:
+        df['score_necessidade'] = df[necessidade_exist].mean(axis=1)
+    
+    # ============================================
+    # SCORE DE SUPORTE PERCEBIDO (da faculdade)
+    # ============================================
+    suporte_exist = [c for c in SUPORTE_COLS if c in df.columns]
+    if suporte_exist:
+        df['score_suporte'] = df[suporte_exist].mean(axis=1)
+    
+    # ============================================
+    # GAP (PROBLEMA = Necessidade - Suporte)
+    # ============================================
+    if 'score_necessidade' in df.columns and 'score_suporte' in df.columns:
+        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    
+    # ============================================
+    # Mantido para compatibilidade (não usar)
+    # ============================================
     percepcao_exist = [c for c in PERCEPCAO_COLS if c in df.columns]
     if percepcao_exist:
         df['score_percepcao'] = df[percepcao_exist].mean(axis=1)
     
+    # ============================================
+    # OUTROS SCORES
+    # ============================================
     intencao_exist = [c for c in INTENCAO_COLS if c in df.columns]
     if intencao_exist:
         df['score_intencao'] = df[intencao_exist].mean(axis=1)
