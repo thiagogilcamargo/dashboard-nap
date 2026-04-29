@@ -1,4 +1,3 @@
-# dashboard/app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -8,8 +7,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils import (
-    carregar_dados_brutos, 
-    aplicar_jornada, 
+    carregar_dados_brutos,
+    aplicar_jornada,
     calcular_scores_dataframe,
     calcular_priorizacao,
     limpar_colunas
@@ -28,9 +27,7 @@ def carregar_e_processar():
 df = carregar_e_processar()
 df_problemas = calcular_priorizacao(df)
 
-# ============================================================
-# SIDEBAR COM FILTROS
-# ============================================================
+# Sidebar
 st.sidebar.title("🎛️ Filtros")
 st.sidebar.markdown("---")
 
@@ -74,104 +71,75 @@ if 'Jornada' in df.columns:
 st.sidebar.markdown("---")
 st.sidebar.caption(f"📊 Mostrando **{len(df)}** registros")
 
-# ============================================================
-# DASHBOARD PRINCIPAL
-# ============================================================
+# Dashboard principal
 st.title("🧠 NAP — Núcleo de Apoio Psicopedagógico")
 st.markdown("### Painel de Jornada e Experiência do Aluno")
 st.markdown("---")
 
-# ============================================================
-# KPIs
-# ============================================================
 st.subheader("📊 Visão Geral")
+
+necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+
+pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
 
 col1, col2, col3, col4 = st.columns(4)
 col5, col6, col7, col8 = st.columns(4)
 
 with col1:
     st.metric("📋 Total", len(df))
-
 with col2:
-    pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100
     st.metric("✅ Já usaram", f"{pct_usou:.0f}%")
-
 with col3:
-    st.metric("🎯 Necessidade", f"{df['score_necessidade'].mean():.1f}/10")
-
+    st.metric("🎯 Necessidade", f"{necessidade:.1f}/10")
 with col4:
-    st.metric("🏫 Suporte", f"{df['score_suporte'].mean():.1f}/10")
-
+    st.metric("🏫 Suporte", f"{suporte:.1f}/10")
 with col5:
-    st.metric("📊 Gap", f"{df['score_gap'].mean():.1f}")
-
+    st.metric("📊 Gap", f"{gap:.1f}")
 with col6:
-    st.metric("🎯 Intenção", f"{df['score_intencao'].mean():.1f}/10")
-
+    st.metric("🎯 Intenção", f"{intencao:.1f}/10")
 with col7:
-    pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100
     st.metric("👀 Conhecem", f"{pct_conhece:.0f}%")
-
 with col8:
-    pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100
     st.metric("❌ Desconhecem", f"{pct_nao_conhece:.0f}%")
 
-# ============================================================
-# FUNIL DE ADOÇÃO
-# ============================================================
+# Funil de adoção
 st.markdown("---")
 st.subheader("📊 Funil de Adoção")
-
 if 'Jornada' in df.columns:
     funil = df['Jornada'].value_counts().reset_index()
     funil.columns = ['Status', 'Quantidade']
     fig = px.bar(funil, x='Status', y='Quantidade', color='Status', text='Quantidade')
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# SCORES POR DIMENSÃO
-# ============================================================
+# Scores por dimensão
 st.markdown("---")
 st.subheader("📊 Scores por Dimensão")
-
 scores_data = [
-    {"Dimensão": "Necessidade", "Score": df['score_necessidade'].mean()},
-    {"Dimensão": "Suporte", "Score": df['score_suporte'].mean()},
-    {"Dimensão": "Intenção", "Score": df['score_intencao'].mean()},
+    {"Dimensão": "Necessidade", "Score": necessidade},
+    {"Dimensão": "Suporte", "Score": suporte},
+    {"Dimensão": "Intenção", "Score": intencao},
 ]
-
-if 'score_experiencia' in df.columns:
-    exp_mean = df[df['Jornada'] == 'Usou NAP']['score_experiencia'].mean()
-    if not pd.isna(exp_mean):
-        scores_data.append({"Dimensão": "Experiência", "Score": exp_mean})
-if 'score_acesso' in df.columns:
-    acesso_mean = df[df['Jornada'] == 'Usou NAP']['score_acesso'].mean()
-    if not pd.isna(acesso_mean):
-        scores_data.append({"Dimensão": "Acesso", "Score": acesso_mean})
-
 df_scores = pd.DataFrame(scores_data)
 fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
-st.plotly_chart(fig_scores, width='stretch')
+st.plotly_chart(fig_scores, use_container_width=True)
 
-# ============================================================
-# PRIORIZAÇÃO
-# ============================================================
+# Priorização
 st.markdown("---")
 st.subheader("🎯 Priorização de Problemas")
-
 if not df_problemas.empty:
     fig_prior = px.bar(df_problemas, x='Problema', y='Prioridade', color='Prioridade', text='Prioridade')
-    st.plotly_chart(fig_prior, width='stretch')
-    
-    with st.expander("📋 Detalhamento da priorização"):
+    st.plotly_chart(fig_prior, use_container_width=True)
+    with st.expander("📋 Detalhamento"):
         st.dataframe(df_problemas[['Problema', 'Impacto', 'Esforço', 'Prioridade']])
 
-# ============================================================
-# DISTRIBUIÇÕES DEMOGRÁFICAS
-# ============================================================
+# Distribuições
 st.markdown("---")
 st.subheader("📈 Distribuições Demográficas")
-
 col_esq, col_meio, col_dir = st.columns(3)
 
 with col_esq:
@@ -179,39 +147,34 @@ with col_esq:
         idade_counts = df['Faixa Etária'].value_counts().reset_index()
         idade_counts.columns = ['Faixa Etária', 'Quantidade']
         fig_id = px.pie(idade_counts, values='Quantidade', names='Faixa Etária')
-        st.plotly_chart(fig_id, width='stretch')
+        st.plotly_chart(fig_id, use_container_width=True)
 
 with col_meio:
     if 'Gênero' in df.columns:
         genero_counts = df['Gênero'].value_counts().reset_index()
         genero_counts.columns = ['Gênero', 'Quantidade']
         fig_gen = px.pie(genero_counts, values='Quantidade', names='Gênero')
-        st.plotly_chart(fig_gen, width='stretch')
+        st.plotly_chart(fig_gen, use_container_width=True)
 
 with col_dir:
     if 'Período' in df.columns:
         periodo_counts = df['Período'].value_counts().reset_index()
         periodo_counts.columns = ['Período', 'Quantidade']
         fig_per = px.pie(periodo_counts, values='Quantidade', names='Período')
-        st.plotly_chart(fig_per, width='stretch')
+        st.plotly_chart(fig_per, use_container_width=True)
 
-# ============================================================
-# CAMPUS
-# ============================================================
+# Campus
 st.markdown("---")
 if 'Campus' in df.columns:
     st.subheader("🏢 Distribuição por Campus")
     campus_counts = df['Campus'].value_counts().reset_index()
     campus_counts.columns = ['Campus', 'Quantidade']
     fig_campus = px.bar(campus_counts, x='Campus', y='Quantidade', color='Campus', text='Quantidade')
-    st.plotly_chart(fig_campus, width='stretch')
+    st.plotly_chart(fig_campus, use_container_width=True)
 
-# ============================================================
-# INSIGHT ESTRATÉGICO
-# ============================================================
+# Insight
 st.markdown("---")
 st.success("✅ Dashboard completo!")
-
 if not df_problemas.empty:
     top_problema = df_problemas.iloc[0]['Problema']
     st.info(f"💡 **Insight estratégico:** O principal problema identificado é '{top_problema}'. Recomenda-se priorizar ações neste ponto.")
