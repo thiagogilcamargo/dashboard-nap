@@ -1,7 +1,8 @@
 # utils.py
 import pandas as pd
 import numpy as np
-from config import PATH_RAW, JORNADA_COL
+import os
+from config.config import PATH_RAW, JORNADA_COL
 
 def carregar_dados_brutos():
     df = pd.read_csv(PATH_RAW, encoding='utf-8-sig')
@@ -41,7 +42,7 @@ def calcular_scores(df):
     
     df['score_necessidade'] = df[cols_perc[:3]].mean(axis=1) if len(cols_perc) >= 3 else np.nan
     df['score_suporte'] = df[cols_perc[2]] if len(cols_perc) > 2 else np.nan
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte'] if 'score_necessidade' in df.columns and 'score_suporte' in df.columns else np.nan
     
     cols_int = [
         "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
