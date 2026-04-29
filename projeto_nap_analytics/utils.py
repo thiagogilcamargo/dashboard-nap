@@ -31,41 +31,68 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Busca as colunas pelo nome (flexível)
-    def encontra_coluna(palavras_chave):
-        for col in df.columns:
-            if all(p in col for p in palavras_chave):
-                return col
-        return None
+    # === NECESSIDADE DO ALUNO (média de 3 perguntas) ===
+    col_necessidade1 = "Já senti necessidade de apoio emocional durante a graduação."
+    col_necessidade2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
+    col_necessidade3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
     
-    # Necessidade (média de 3 perguntas)
-    col_necessidade1 = encontra_coluna(["necessidade", "apoio emocional"])
-    col_necessidade2 = encontra_coluna(["confortável", "procurar ajuda"])
-    col_necessidade3 = encontra_coluna(["acredito", "serviços", "apoio", "melhorar"])
+    # === SUPORTE PERCEBIDO (1 pergunta) ===
+    col_suporte = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
     
-    # Suporte (1 pergunta)
-    col_suporte = encontra_coluna(["sinto", "suporte suficiente", "emocionais"])
+    # === INTENÇÃO DE USO (3 perguntas) ===
+    col_intencao1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
+    col_intencao2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
+    col_intencao3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
     
-    # Intenção (3 perguntas - adaptado)
-    col_intencao1 = encontra_coluna(["pensei", "utilizar", "NAP"])
-    col_intencao2 = encontra_coluna(["confiança", "confidencialidade"])
-    col_intencao3 = encontra_coluna["sei como acessar"]
+    # Converter para numérico
+    for col in [col_necessidade1, col_necessidade2, col_necessidade3, col_suporte, col_intencao1, col_intencao2, col_intencao3]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    # Converte para numérico e calcula
-    if col_necessidade1 and col_necessidade2 and col_necessidade3:
-        df[col_necessidade1] = pd.to_numeric(df[col_necessidade1], errors='coerce')
-        df[col_necessidade2] = pd.to_numeric(df[col_necessidade2], errors='coerce')
-        df[col_necessidade3] = pd.to_numeric(df[col_necessidade3], errors='coerce')
+    # Calcular Necessidade
+    if col_necessidade1 in df.columns and col_necessidade2 in df.columns and col_necessidade3 in df.columns:
         df['score_necessidade'] = df[[col_necessidade1, col_necessidade2, col_necessidade3]].mean(axis=1)
     
-    if col_suporte:
-        df[col_suporte] = pd.to_numeric(df[col_suporte], errors='coerce')
+    # Calcular Suporte
+    if col_suporte in df.columns:
         df['score_suporte'] = df[col_suporte]
     
+    # Calcular Gap (Necessidade - Suporte)
     if 'score_necessidade' in df.columns and 'score_suporte' in df.columns:
         df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     
+    # Calcular Intenção
+    if col_intencao1 in df.columns and col_intencao2 in df.columns and col_intencao3 in df.columns:
+        df['score_intencao'] = df[[col_intencao1, col_intencao2, col_intencao3]].mean(axis=1)
+    
     return df
+
+def calcular_priorizacao(df):
+    problemas = []
+    
+    col_info = "Eu sei a quem recorrer dentro da faculdade quando tenho dificuldades emocionais."
+    if col_info in df.columns:
+        df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
+        impacto_info = 10 - df[col_info].mean()
+        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
+    
+    col_prec = "Sinto que existe um preconceito em procurar apoio psicológico ou pedagógico na instituição."
+    if col_prec in df.columns:
+        df[col_prec] = pd.to_numeric(df[col_prec], errors='coerce')
+        impacto_prec = df[col_prec].mean()
+        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
+    
+    if problemas:
+        df_problemas = pd.DataFrame(problemas)
+        if df_problemas['Impacto'].max() != df_problemas['Impacto'].min():
+            df_problemas['Impacto_norm'] = (df_problemas['Impacto'] - df_problemas['Impacto'].min()) / (df_problemas['Impacto'].max() - df_problemas['Impacto'].min())
+        else:
+            df_problemas['Impacto_norm'] = 0
+        df_problemas['Esforço_norm'] = (df_problemas['Esforço'] - df_problemas['Esforço'].min()) / (df_problemas['Esforço'].max() - df_problemas['Esforço'].min())
+        df_problemas['Prioridade'] = df_problemas['Impacto_norm'] * (1 - df_problemas['Esforço_norm'])
+        return df_problemas.sort_values('Prioridade', ascending=False)
+    
+    return pd.DataFrame()
 
 def limpar_colunas(df):
     colunas_remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
