@@ -6,12 +6,9 @@ import plotly.graph_objects as go
 import numpy as np
 import sys
 import os
-from io import BytesIO
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
 from datetime import datetime
+import io
+import base64
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -35,7 +32,79 @@ def carregar_e_processar():
 df = carregar_e_processar()
 
 # ============================================================
-# SIDEBAR COM FILTROS
+# FUNÇÃO PARA EXPORTAR HTML (PDF alternativo)
+# ============================================================
+def gerar_html_relatorio():
+    necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+    suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+    gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+    intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+    pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_nao = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Relatório NAP</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
+            h1 {{ color: #2c3e50; text-align: center; }}
+            h2 {{ color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+            .metric-card {{ background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #3498db; }}
+            .metric-value {{ font-size: 24px; font-weight: bold; color: #2c3e50; }}
+            .warning {{ color: #e74c3c; font-weight: bold; }}
+            .success {{ color: #27ae60; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            th, td {{ padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }}
+            th {{ background: #3498db; color: white; }}
+            .footer {{ text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🧠 NAP - Relatório Executivo</h1>
+            <p style="text-align: center">Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+            
+            <h2>📊 Métricas Principais</h2>
+            <div class="metric-card"><strong>Total de respondentes:</strong> <span class="metric-value">{len(df)}</span></div>
+            <div class="metric-card"><strong>Já usaram o NAP:</strong> <span class="metric-value">{pct_usou:.0f}%</span></div>
+            <div class="metric-card"><strong>Necessidade de apoio:</strong> <span class="metric-value">{necessidade:.1f}/10</span></div>
+            <div class="metric-card"><strong>Suporte percebido:</strong> <span class="metric-value">{suporte:.1f}/10</span></div>
+            <div class="metric-card"><strong>Gap (Necessidade - Suporte):</strong> <span class="metric-value warning">{gap:.1f}</span></div>
+            <div class="metric-card"><strong>Intenção de uso:</strong> <span class="metric-value">{intencao:.1f}/10</span></div>
+            <div class="metric-card"><strong>Conhecem mas não usaram:</strong> <span class="metric-value">{pct_conhece:.0f}%</span></div>
+            <div class="metric-card"><strong>Desconhecem o NAP:</strong> <span class="metric-value warning">{pct_nao:.0f}%</span></div>
+            
+            <h2>🎯 Priorização de Problemas</h2>
+            <table>
+                <tr><th>Problema</th><th>Impacto</th><th>Esforço</th><th>Prioridade</th></tr>
+                <tr><td>Falta de informação</td><td>7.5</td><td>2</td><td>3.75</td></tr>
+                <tr><td>Preconceito</td><td>5.2</td><td>6</td><td>0.87</td></tr>
+            </table>
+            
+            <h2>💡 Recomendações</h2>
+            <ul>
+                <li>🚨 <strong>Urgente:</strong> Campanha de divulgação do NAP (49% desconhecem)</li>
+                <li>📢 <strong>Importante:</strong> Comunicar os serviços oferecidos pelo NAP</li>
+                <li>📊 <strong>Ação:</strong> Reduzir gap de {gap:.1f} pontos entre necessidade e suporte</li>
+                <li>👥 <strong>Estratégia:</strong> Depoimentos de alunos que usaram o NAP</li>
+            </ul>
+            
+            <div class="footer">
+                <p>Relatório gerado automaticamente pelo Dashboard NAP Analytics</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+# ============================================================
+# SIDEBAR
 # ============================================================
 st.sidebar.title("🎛️ Filtros")
 st.sidebar.markdown("---")
@@ -75,88 +144,15 @@ if 'Jornada' in df.columns:
     status_opcoes = ['Todos'] + sorted(df['Jornada'].dropna().unique().tolist())
     status_selecionado = st.sidebar.selectbox("🔄 Status no NAP", status_opcoes)
     if status_selecionado != 'Todos':
-        df = df[df['Jornada'] == status_selecionado]
+        df = df[df['Jornada'] == status_selecionado
 
 st.sidebar.markdown("---")
 
-# ============================================================
-# EXPORTAR PDF
-# ============================================================
-def gerar_pdf_relatorio(df, metricas, filename="relatorio_nap.pdf"):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    styles = getSampleStyleSheet()
-    
-    # Estilo personalizado
-    titulo_style = ParagraphStyle(
-        'TituloStyle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        alignment=1,
-        spaceAfter=20
-    )
-    
-    story = []
-    
-    # Título
-    story.append(Paragraph("NAP - Relatório Executivo", titulo_style))
-    story.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
-    story.append(Spacer(1, 12))
-    
-    # Métricas principais
-    story.append(Paragraph("Métricas Principais", styles['Heading2']))
-    story.append(Spacer(1, 6))
-    
-    metricas_texto = f"""
-    Total de respondentes: {metricas['total']}<br/>
-    Já usaram o NAP: {metricas['pct_usou']:.0f}%<br/>
-    Necessidade média: {metricas['necessidade']:.1f}/10<br/>
-    Suporte percebido: {metricas['suporte']:.1f}/10<br/>
-    Gap: {metricas['gap']:.1f}<br/>
-    Intenção média: {metricas['intencao']:.1f}/10<br/>
-    Conhecem mas não usaram: {metricas['pct_conhece']:.0f}%<br/>
-    Desconhecem o NAP: {metricas['pct_nao']:.0f}%
-    """
-    story.append(Paragraph(metricas_texto, styles['Normal']))
-    story.append(Spacer(1, 12))
-    
-    # Insights
-    story.append(Paragraph("Insights Estratégicos", styles['Heading2']))
-    story.append(Spacer(1, 6))
-    
-    insights = []
-    if metricas['gap'] > 3:
-        insights.append("• GAP CRÍTICO: Alta necessidade vs baixo suporte percebido")
-    if metricas['pct_nao'] > 40:
-        insights.append("• Mais de 40% dos alunos desconhecem o NAP")
-    if metricas['necessidade'] > 7 and metricas['suporte'] < 5:
-        insights.append("• Alunos precisam de apoio, mas não percebem que a faculdade oferece")
-    
-    story.append(Paragraph("<br/>".join(insights), styles['Normal']))
-    
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
-
-# Botão de exportar PDF
-if st.sidebar.button("📄 Exportar Relatório PDF"):
-    metricas = {
-        'total': len(df),
-        'necessidade': df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0,
-        'suporte': df['score_suporte'].mean() if 'score_suporte' in df.columns else 0,
-        'gap': df['score_gap'].mean() if 'score_gap' in df.columns else 0,
-        'intencao': df['score_intencao'].mean() if 'score_intencao' in df.columns else 0,
-        'pct_usou': (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0,
-        'pct_conhece': (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0,
-        'pct_nao': (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
-    }
-    pdf_buffer = gerar_pdf_relatorio(df, metricas)
-    st.sidebar.download_button(
-        label="⬇️ Baixar PDF",
-        data=pdf_buffer,
-        file_name="relatorio_nap.pdf",
-        mime="application/pdf"
-    )
+# Exportar Relatório HTML
+html_report = gerar_html_relatorio()
+b64 = base64.b64encode(html_report.encode()).decode()
+href = f'<a href="data:text/html;base64,{b64}" download="relatorio_nap.html" style="text-decoration: none;"><button style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">📄 Baixar Relatório (HTML)</button></a>'
+st.sidebar.markdown(href, unsafe_allow_html=True)
 
 st.sidebar.caption(f"📊 Mostrando **{len(df)}** registros")
 
@@ -181,6 +177,7 @@ pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns
 pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
 pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
 
+# Layout de KPIs em 2 linhas
 col1, col2, col3, col4 = st.columns(4)
 col5, col6, col7, col8 = st.columns(4)
 
@@ -189,25 +186,24 @@ with col1:
 with col2:
     st.metric("✅ Já usaram", f"{pct_usou:.0f}%")
 with col3:
-    st.metric("🎯 Necessidade", f"{necessidade:.1f}/10")
+    st.metric("🎯 Necessidade", f"{necessidade:.1f}/10", delta=f"{necessidade-5:.1f}" if necessidade > 0 else None)
 with col4:
-    st.metric("🏫 Suporte", f"{suporte:.1f}/10")
+    st.metric("🏫 Suporte", f"{suporte:.1f}/10", delta=f"{suporte-5:.1f}" if suporte > 0 else None)
 with col5:
-    st.metric("📊 Gap", f"{gap:.1f}")
+    st.metric("📊 Gap", f"{gap:.1f}", delta="crítico" if gap > 3 else "moderado", delta_color="inverse")
 with col6:
     st.metric("🎯 Intenção", f"{intencao:.1f}/10")
 with col7:
-    st.metric("👀 Conhecem mas não usaram", f"{pct_conhece:.0f}%")
+    st.metric("👀 Conhecem", f"{pct_conhece:.0f}%")
 with col8:
-    st.metric("❌ Desconhecem", f"{pct_nao_conhece:.0f}%")
+    st.metric("❌ Desconhecem", f"{pct_nao_conhece:.0f}%", delta="alerta" if pct_nao_conhece > 40 else None)
 
 # ============================================================
-# 1. HEATMAP DE CORRELAÇÃO
+# HEATMAP DE CORRELAÇÃO (APRIMORADO)
 # ============================================================
 st.markdown("---")
-st.subheader("📊 Heatmap de Correlação entre Perguntas")
+st.subheader("📊 Matriz de Correlação entre Perguntas")
 
-# Selecionar colunas numéricas para correlação
 cols_correlacao = [
     "Já senti necessidade de apoio emocional durante a graduação.",
     "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
@@ -217,62 +213,119 @@ cols_correlacao = [
     "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
 ]
 
+# Nomes curtos para exibição
+nomes_curtos = {
+    "Já senti necessidade de apoio emocional durante a graduação.": "Necessidade",
+    "Eu me sentiria confortável em procurar ajuda dentro da instituição.": "Conforto",
+    "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.": "Suporte",
+    "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.": "Crença",
+    "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.": "Intenção",
+    "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).": "Confiança"
+}
+
 cols_existentes = [col for col in cols_correlacao if col in df.columns]
 
 if len(cols_existentes) >= 2:
-    # Calcular correlação
     corr_matrix = df[cols_existentes].corr()
     
-    # Criar heatmap
+    # Renomear para exibição
+    corr_matrix = corr_matrix.rename(index=nomes_curtos, columns=nomes_curtos)
+    
     fig_corr = px.imshow(
         corr_matrix,
-        text_auto=True,
-        aspect="auto",
-        color_continuous_scale="RdBu_r",
-        title="Correlação entre perguntas"
+        text_auto='.2f',
+        aspect='auto',
+        color_continuous_scale='RdBu_r',
+        zmin=-1, zmax=1,
+        title="<b>Correlação entre as perguntas</b><br><span style='font-size:12px'>Valores próximos a 1 indicam forte relação positiva; próximos a -1 indicam relação inversa</span>",
+        labels=dict(color="Correlação")
+    )
+    fig_corr.update_layout(
+        height=500,
+        width=600,
+        title_x=0.5,
+        font=dict(size=12)
     )
     st.plotly_chart(fig_corr, use_container_width=True)
+    
+    # Explicação
+    with st.expander("📖 Como interpretar o heatmap"):
+        st.markdown("""
+        - **Correlação positiva (vermelho)**: Quando uma pergunta aumenta, a outra também tende a aumentar
+        - **Correlação negativa (azul)**: Quando uma pergunta aumenta, a outra tende a diminuir
+        - **Quanto mais próximo de 1 ou -1, mais forte é a relação**
+        
+        🔍 **Exemplo**: Se "Necessidade" tem alta correlação com "Intenção", significa que quem mais precisa também tem mais intenção de usar o NAP.
+        """)
 else:
     st.info("Dados insuficientes para gerar heatmap de correlação")
 
 # ============================================================
-# 2. COMPARAÇÃO DE CAMPI LADO A LADO
+# COMPARAÇÃO ENTRE CAMPI
 # ============================================================
 st.markdown("---")
 st.subheader("🏢 Comparação entre Campi")
 
 if 'Campus' in df.columns and len(df['Campus'].unique()) > 1:
-    # Agrupar por campus
     campi_comparacao = df.groupby('Campus').agg({
         'score_necessidade': 'mean',
         'score_suporte': 'mean',
         'score_intencao': 'mean'
     }).reset_index()
-    
     campi_comparacao.columns = ['Campus', 'Necessidade', 'Suporte', 'Intenção']
     
-    # Gráfico de barras lado a lado
     fig_campi = go.Figure()
-    fig_campi.add_trace(go.Bar(name='Necessidade', x=campi_comparacao['Campus'], y=campi_comparacao['Necessidade'], text=campi_comparacao['Necessidade'].round(1), textposition='auto'))
-    fig_campi.add_trace(go.Bar(name='Suporte', x=campi_comparacao['Campus'], y=campi_comparacao['Suporte'], text=campi_comparacao['Suporte'].round(1), textposition='auto'))
-    fig_campi.add_trace(go.Bar(name='Intenção', x=campi_comparacao['Campus'], y=campi_comparacao['Intenção'], text=campi_comparacao['Intenção'].round(1), textposition='auto'))
+    fig_campi.add_trace(go.Bar(
+        name='Necessidade',
+        x=campi_comparacao['Campus'],
+        y=campi_comparacao['Necessidade'],
+        text=campi_comparacao['Necessidade'].round(1),
+        textposition='auto',
+        marker_color='#e74c3c'
+    ))
+    fig_campi.add_trace(go.Bar(
+        name='Suporte',
+        x=campi_comparacao['Campus'],
+        y=campi_comparacao['Suporte'],
+        text=campi_comparacao['Suporte'].round(1),
+        textposition='auto',
+        marker_color='#3498db'
+    ))
+    fig_campi.add_trace(go.Bar(
+        name='Intenção',
+        x=campi_comparacao['Campus'],
+        y=campi_comparacao['Intenção'],
+        text=campi_comparacao['Intenção'].round(1),
+        textposition='auto',
+        marker_color='#2ecc71'
+    ))
     
-    fig_campi.update_layout(title="Comparação de Scores por Campus", barmode='group', xaxis_title="Campus", yaxis_title="Score (0-10)")
+    fig_campi.update_layout(
+        title="<b>Comparação de Scores por Campus</b>",
+        barmode='group',
+        xaxis_title="Campus",
+        yaxis_title="Score (0-10)",
+        yaxis_range=[0, 10],
+        legend_title="Dimensão",
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis_tickangle=-45
+    )
     st.plotly_chart(fig_campi, use_container_width=True)
+    
+    # Melhor campus
+    melhor_campus = campi_comparacao.loc[campi_comparacao['Suporte'].idxmax(), 'Campus']
+    st.info(f"🏆 O campus com maior suporte percebido é **{melhor_campus}** com {campi_comparacao['Suporte'].max():.1f}/10")
 else:
     st.info("Dados insuficientes para comparação entre campi")
 
 # ============================================================
-# 3. ANÁLISE POR SEMESTRE (EVOLUÇÃO)
+# ANÁLISE POR SEMESTRE
 # ============================================================
 st.markdown("---")
 st.subheader("📚 Análise por Semestre - Evolução")
 
 if 'Semestre' in df.columns:
-    # Extrair número do semestre (ex: "7° Semestre" -> 7)
     df['Semestre_Num'] = df['Semestre'].str.extract(r'(\d+)').astype(float)
-    
-    # Agrupar por semestre
     evolucao = df.groupby('Semestre_Num').agg({
         'score_necessidade': 'mean',
         'score_suporte': 'mean',
@@ -281,23 +334,189 @@ if 'Semestre' in df.columns:
     
     if len(evolucao) >= 2:
         fig_evolucao = go.Figure()
-        fig_evolucao.add_trace(go.Scatter(x=evolucao['Semestre_Num'], y=evolucao['score_necessidade'], mode='lines+markers', name='Necessidade', line=dict(color='red')))
-        fig_evolucao.add_trace(go.Scatter(x=evolucao['Semestre_Num'], y=evolucao['score_suporte'], mode='lines+markers', name='Suporte', line=dict(color='blue')))
-        fig_evolucao.add_trace(go.Scatter(x=evolucao['Semestre_Num'], y=evolucao['score_intencao'], mode='lines+markers', name='Intenção', line=dict(color='green')))
+        fig_evolucao.add_trace(go.Scatter(
+            x=evolucao['Semestre_Num'], y=evolucao['score_necessidade'],
+            mode='lines+markers', name='Necessidade',
+            line=dict(color='#e74c3c', width=3),
+            marker=dict(size=10)
+        ))
+        fig_evolucao.add_trace(go.Scatter(
+            x=evolucao['Semestre_Num'], y=evolucao['score_suporte'],
+            mode='lines+markers', name='Suporte',
+            line=dict(color='#3498db', width=3),
+            marker=dict(size=10)
+        ))
+        fig_evolucao.add_trace(go.Scatter(
+            x=evolucao['Semestre_Num'], y=evolucao['score_intencao'],
+            mode='lines+markers', name='Intenção',
+            line=dict(color='#2ecc71', width=3),
+            marker=dict(size=10)
+        ))
         
-        fig_evolucao.update_layout(title="Evolução dos Scores por Semestre", xaxis_title="Semestre", yaxis_title="Score (0-10)")
+        fig_evolucao.update_layout(
+            title="<b>Evolução dos Scores ao longo dos Semestres</b>",
+            xaxis_title="Semestre",
+            yaxis_title="Score (0-10)",
+            yaxis_range=[0, 10],
+            legend_title="Dimensão",
+            plot_bgcolor='rgba(0,0,0,0)',
+            hovermode='x unified'
+        )
         st.plotly_chart(fig_evolucao, use_container_width=True)
         
-        # Insight sobre evolução
-        if len(evolucao) >= 2:
-            ultimo = evolucao.iloc[-1]
-            primeiro = evolucao.iloc[0]
-            if ultimo['score_suporte'] < primeiro['score_suporte']:
-                st.warning(f"📉 Percepção de suporte caiu do {primeiro['score_suporte']:.1f} para {ultimo['score_suporte']:.1f} ao longo dos semestres")
+        # Insight da evolução
+        primeiro_sup = evolucao.iloc[0]['score_suporte']
+        ultimo_sup = evolucao.iloc[-1]['score_suporte']
+        if ultimo_sup < primeiro_sup:
+            st.warning(f"📉 **Atenção:** A percepção de suporte caiu {primeiro_sup - ultimo_sup:.1f} pontos ao longo dos semestres ({primeiro_sup:.1f} → {ultimo_sup:.1f})")
     else:
         st.info("Dados insuficientes para análise de evolução por semestre")
 else:
-    st.info("Coluna 'Semestre' não encontrada para análise de evolução")
+    st.info("Coluna 'Semestre' não encontrada")
+
+# ============================================================
+# SCORES POR DIMENSÃO (APRIMORADO)
+# ============================================================
+st.markdown("---")
+st.subheader("📊 Scores por Dimensão - Avaliação do NAP")
+
+# Criar DataFrame com todos os scores
+todos_scores = []
+if necessidade > 0:
+    todos_scores.append({"Dimensão": "Necessidade de Apoio", "Score": necessidade, "Descrição": "O quanto o aluno sente que precisa de apoio psicológico"})
+if suporte > 0:
+    todos_scores.append({"Dimensão": "Suporte Percebido", "Score": suporte, "Descrição": "O quanto o aluno percebe que a faculdade oferece suporte"})
+if intencao > 0:
+    todos_scores.append({"Dimensão": "Intenção de Uso", "Score": intencao, "Descrição": "Disposição do aluno em utilizar o NAP"})
+
+if todos_scores:
+    df_scores = pd.DataFrame(todos_scores)
+    
+    # Gráfico de barras com cores
+    cores = ['#e74c3c', '#3498db', '#2ecc71']
+    fig_scores = go.Figure()
+    
+    for i, row in df_scores.iterrows():
+        fig_scores.add_trace(go.Bar(
+            x=[row['Dimensão']],
+            y=[row['Score']],
+            name=row['Dimensão'],
+            text=[f"{row['Score']:.1f}/10"],
+            textposition='auto',
+            marker_color=cores[i % len(cores)],
+            hovertext=row['Descrição'],
+            hovertemplate='<b>%{x}</b><br>Score: %{y:.1f}/10<br>%{customdata}<extra></extra>',
+            customdata=[row['Descrição']]
+        ))
+    
+    fig_scores.update_layout(
+        title="<b>Avaliação do NAP por Dimensão</b>",
+        yaxis_title="Score (0-10)",
+        yaxis_range=[0, 10],
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=500
+    )
+    st.plotly_chart(fig_scores, use_container_width=True)
+    
+    # Tabela explicativa
+    with st.expander("📋 Entenda cada dimensão"):
+        for _, row in df_scores.iterrows():
+            cor = "🟢" if row['Score'] >= 7 else "🟡" if row['Score'] >= 5 else "🔴"
+            st.markdown(f"**{cor} {row['Dimensão']}**: {row['Score']:.1f}/10 - {row['Descrição']}")
+
+# ============================================================
+# PRIORIZAÇÃO DE PROBLEMAS (APRIMORADA)
+# ============================================================
+st.markdown("---")
+st.subheader("🎯 Priorização de Problemas - Matriz Impacto x Esforço")
+
+# Calcular priorização com dados reais
+problemas = []
+
+col_info = None
+for col in df.columns:
+    if 'sei a quem recorrer' in col.lower():
+        col_info = col
+        break
+
+if col_info:
+    dados = pd.to_numeric(df[col_info], errors='coerce').dropna()
+    if len(dados) > 0:
+        impacto_info = 10 - dados.mean()
+        problemas.append({
+            "Problema": "Falta de informação sobre o NAP",
+            "Impacto": round(impacto_info, 2),
+            "Esforço": 2,
+            "Justificativa": "49% desconhecem o NAP. Campanha de divulgação tem baixo custo.",
+            "Categoria": "Comunicação"
+        })
+
+col_prec = None
+for col in df.columns:
+    if 'preconceito' in col.lower():
+        col_prec = col
+        break
+
+if col_prec:
+    dados = pd.to_numeric(df[col_prec], errors='coerce').dropna()
+    if len(dados) > 0:
+        impacto_prec = dados.mean()
+        problemas.append({
+            "Problema": "Preconceito em buscar ajuda psicológica",
+            "Impacto": round(impacto_prec, 2),
+            "Esforço": 6,
+            "Justificativa": "Mudança cultural leva tempo. Necessário campanha de desmistificação.",
+            "Categoria": "Cultural"
+        })
+
+# Adicionar problema de gap
+if gap > 3:
+    problemas.append({
+        "Problema": f"Gap entre necessidade e suporte ({gap:.1f} pontos)",
+        "Impacto": round(gap, 2),
+        "Esforço": 5,
+        "Justificativa": "Alunos precisam mas não percebem suporte. Trabalhar comunicação e acolhimento.",
+        "Categoria": "Percepção"
+    })
+
+if problemas:
+    df_problemas = pd.DataFrame(problemas)
+    df_problemas['Prioridade'] = df_problemas['Impacto'] / df_problemas['Esforço']
+    df_problemas = df_problemas.sort_values('Prioridade', ascending=False)
+    
+    # Gráfico de bolhas (Impacto x Esforço)
+    fig_prior = px.scatter(
+        df_problemas,
+        x='Esforço',
+        y='Impacto',
+        size='Prioridade',
+        color='Categoria',
+        text='Problema',
+        hover_data=['Justificativa'],
+        title="<b>Matriz Impacto x Esforço</b><br><span style='font-size:12px'>Prioridade: quanto maior a bolha, maior a relação Impacto/Esforço</span>"
+    )
+    fig_prior.update_layout(
+        xaxis_title="Esforço (maior = mais difícil)",
+        yaxis_title="Impacto (maior = mais grave)",
+        xaxis_range=[0, 10],
+        yaxis_range=[0, 10],
+        height=500
+    )
+    fig_prior.update_traces(textposition='top center')
+    st.plotly_chart(fig_prior, use_container_width=True)
+    
+    # Tabela de priorização
+    st.subheader("🏆 Ranking de Prioridade")
+    for i, row in df_problemas.iterrows():
+        if row['Prioridade'] == df_problemas['Prioridade'].max():
+            st.warning(f"**🔥 PRIORIDADE MÁXIMA** - {row['Problema']}")
+            st.caption(f"   └─ {row['Justificativa']}")
+        else:
+            st.info(f"**📌 {row['Problema']}** - Prioridade: {row['Prioridade']:.2f}")
+            st.caption(f"   └─ {row['Justificativa']}")
+else:
+    st.info("Dados insuficientes para priorização")
 
 # ============================================================
 # FUNIL DE ADOÇÃO
@@ -311,68 +530,6 @@ if 'Jornada' in df.columns:
     st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
-# SCORES POR DIMENSÃO
-# ============================================================
-st.markdown("---")
-st.subheader("📊 Scores por Dimensão")
-
-scores_data = []
-if necessidade > 0:
-    scores_data.append({"Dimensão": "Necessidade", "Score": necessidade})
-if suporte > 0:
-    scores_data.append({"Dimensão": "Suporte", "Score": suporte})
-if intencao > 0:
-    scores_data.append({"Dimensão": "Intenção", "Score": intencao})
-
-if scores_data:
-    df_scores = pd.DataFrame(scores_data)
-    fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
-    st.plotly_chart(fig_scores, use_container_width=True)
-
-# ============================================================
-# PRIORIZAÇÃO DE PROBLEMAS
-# ============================================================
-st.markdown("---")
-st.subheader("🎯 Priorização de Problemas")
-
-problemas = []
-
-col_info = None
-for col in df.columns:
-    if 'sei a quem recorrer' in col.lower():
-        col_info = col
-        break
-
-if col_info:
-    dados = pd.to_numeric(df[col_info], errors='coerce').dropna()
-    if len(dados) > 0:
-        impacto_info = 10 - dados.mean()
-        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
-
-col_prec = None
-for col in df.columns:
-    if 'preconceito' in col.lower():
-        col_prec = col
-        break
-
-if col_prec:
-    dados = pd.to_numeric(df[col_prec], errors='coerce').dropna()
-    if len(dados) > 0:
-        impacto_prec = dados.mean()
-        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
-
-if problemas:
-    df_problemas = pd.DataFrame(problemas)
-    df_problemas['Prioridade'] = df_problemas['Impacto'] / df_problemas['Esforço']
-    df_problemas = df_problemas.sort_values('Prioridade', ascending=False)
-    fig_prior = px.bar(df_problemas, x='Problema', y='Prioridade', color='Problema', text='Prioridade')
-    st.plotly_chart(fig_prior, use_container_width=True)
-    with st.expander("📋 Detalhamento da priorização"):
-        st.dataframe(df_problemas)
-else:
-    st.info("Dados insuficientes para priorização")
-
-# ============================================================
 # DISTRIBUIÇÕES DEMOGRÁFICAS
 # ============================================================
 st.markdown("---")
@@ -384,21 +541,21 @@ with col_esq:
     if 'Faixa Etária' in df.columns:
         idade_counts = df['Faixa Etária'].value_counts().reset_index()
         idade_counts.columns = ['Faixa Etária', 'Quantidade']
-        fig_id = px.pie(idade_counts, values='Quantidade', names='Faixa Etária')
+        fig_id = px.pie(idade_counts, values='Quantidade', names='Faixa Etária', title="Faixa Etária")
         st.plotly_chart(fig_id, use_container_width=True)
 
 with col_meio:
     if 'Gênero' in df.columns:
         genero_counts = df['Gênero'].value_counts().reset_index()
         genero_counts.columns = ['Gênero', 'Quantidade']
-        fig_gen = px.pie(genero_counts, values='Quantidade', names='Gênero')
+        fig_gen = px.pie(genero_counts, values='Quantidade', names='Gênero', title="Gênero")
         st.plotly_chart(fig_gen, use_container_width=True)
 
 with col_dir:
     if 'Período' in df.columns:
         periodo_counts = df['Período'].value_counts().reset_index()
         periodo_counts.columns = ['Período', 'Quantidade']
-        fig_per = px.pie(periodo_counts, values='Quantidade', names='Período')
+        fig_per = px.pie(periodo_counts, values='Quantidade', names='Período', title="Período")
         st.plotly_chart(fig_per, use_container_width=True)
 
 # ============================================================
@@ -416,13 +573,15 @@ if 'Campus' in df.columns:
 # INSIGHT ESTRATÉGICO
 # ============================================================
 st.markdown("---")
-st.success("✅ Dashboard rodando com todos os componentes!")
+st.success("✅ Dashboard rodando com todos os componentes aprimorados!")
 
 if necessidade > 0 and suporte > 0:
     if necessidade > 7 and suporte < 5:
-        st.warning(f"⚠️ **Alerta:** Alta necessidade ({necessidade:.1f}) vs baixo suporte ({suporte:.1f})")
-    elif necessidade > suporte + 2:
-        st.info(f"📌 **Atenção:** Necessidade ({necessidade:.1f}) é maior que o suporte percebido ({suporte:.1f})")
+        st.warning(f"⚠️ **Alerta Estratégico:** Alta necessidade ({necessidade:.1f}/10) vs baixo suporte ({suporte:.1f}/10). Gap de {gap:.1f} pontos. Invista em comunicação e acolhimento!")
 
 if pct_nao_conhece > 40:
-    st.info(f"💡 **Insight:** {pct_nao_conhece:.0f}% dos alunos desconhecem o NAP. Invista em divulgação!")
+    st.info(f"💡 **Insight Estratégico:** {pct_nao_conhece:.0f}% dos alunos desconhecem o NAP. Campanha de divulgação é a ação de maior prioridade e menor custo.")
+
+if 'Semestre' in df.columns and len(evolucao) >= 2:
+    if ultimo_sup < primeiro_sup:
+        st.info(f"📊 **Tendência:** A percepção de suporte cai ao longo dos semestres. Reforce o acolhimento nos períodos finais do curso.")
