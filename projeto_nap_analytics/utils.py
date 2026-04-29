@@ -2,17 +2,13 @@ import pandas as pd
 import numpy as np
 import os
 
-# ============================================================
-# CAMINHO CORRETO (subindo da pasta dashboard)
-# ============================================================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
 
 JORNADA_COL = "Quais da opções abaixo melhor representa você em relação ao NAP (Núcleo de Apoio Psicopedagógico)?"
 
 # ============================================================
-# DADOS
+# LOAD
 # ============================================================
 def carregar_dados_brutos():
     df = pd.read_csv(PATH_RAW, encoding="utf-8-sig")
@@ -33,6 +29,7 @@ def classificar_jornada(valor):
     if "Conheço" in str(valor):
         return "Conhece mas não usou"
     return "Indefinido"
+
 
 def aplicar_jornada(df):
     if JORNADA_COL in df.columns:
