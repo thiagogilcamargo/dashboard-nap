@@ -32,6 +32,27 @@ df = carregar_e_processar()
 df_problemas = calcular_priorizacao(df)
 
 # ============================================================
+# DEBUG VISUAL (remova depois que funcionar)
+# ============================================================
+with st.expander("🔧 DEBUG - Verificar Scores (remova depois)"):
+    st.write("### Colunas de score no DataFrame:")
+    score_cols = [col for col in df.columns if 'score' in col]
+    st.write(f"Encontradas: {score_cols}")
+    
+    for col in score_cols:
+        media = df[col].mean()
+        if not pd.isna(media):
+            st.write(f"✅ {col}: {media:.2f}")
+        else:
+            st.write(f"❌ {col}: TODOS OS VALORES SÃO NAN (vazios)")
+    
+    st.write("### Primeiras 5 linhas dos scores:")
+    if score_cols:
+        st.dataframe(df[score_cols].head())
+    else:
+        st.error("NENHUMA coluna de score foi encontrada!")
+
+# ============================================================
 # SIDEBAR COM FILTROS
 # ============================================================
 st.sidebar.title("🎛️ Filtros")
@@ -99,25 +120,33 @@ with col2:
     st.metric("✅ Já usaram", f"{pct_usou:.0f}%")
 
 with col3:
-    if 'score_necessidade' in df.columns:
+    if 'score_necessidade' in df.columns and df['score_necessidade'].notna().any():
         st.metric("🎯 Necessidade de apoio", f"{df['score_necessidade'].mean():.1f}/10")
+    else:
+        st.metric("🎯 Necessidade de apoio", "⏳ Calculando...")
 
 with col4:
-    if 'score_suporte' in df.columns:
+    if 'score_suporte' in df.columns and df['score_suporte'].notna().any():
         st.metric("🏫 Suporte percebido", f"{df['score_suporte'].mean():.1f}/10")
+    else:
+        st.metric("🏫 Suporte percebido", "⏳ Calculando...")
 
 # Segunda linha (gap e intenção)
 col5, col6, col7, col8 = st.columns(4)
 
 with col5:
-    if 'score_gap' in df.columns:
+    if 'score_gap' in df.columns and df['score_gap'].notna().any():
         gap = df['score_gap'].mean()
         cor = "🔴" if gap > 3 else "🟡" if gap > 1 else "🟢"
         st.metric(f"{cor} Gap (Necessidade - Suporte)", f"{gap:.1f}")
+    else:
+        st.metric("📊 Gap", "⏳ Calculando...")
 
 with col6:
-    if 'score_intencao' in df.columns:
+    if 'score_intencao' in df.columns and df['score_intencao'].notna().any():
         st.metric("🎯 Intenção de uso", f"{df['score_intencao'].mean():.1f}/10")
+    else:
+        st.metric("🎯 Intenção de uso", "⏳ Calculando...")
 
 with col7:
     pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100
@@ -143,13 +172,13 @@ if 'Jornada' in df.columns:
 st.subheader("📊 Scores por Dimensão")
 scores_data = []
 
-if 'score_necessidade' in df.columns:
+if 'score_necessidade' in df.columns and df['score_necessidade'].notna().any():
     scores_data.append({"Dimensão": "Necessidade do aluno", "Score": df['score_necessidade'].mean()})
-if 'score_suporte' in df.columns:
+if 'score_suporte' in df.columns and df['score_suporte'].notna().any():
     scores_data.append({"Dimensão": "Suporte percebido", "Score": df['score_suporte'].mean()})
-if 'score_gap' in df.columns:
+if 'score_gap' in df.columns and df['score_gap'].notna().any():
     scores_data.append({"Dimensão": "Gap (problema)", "Score": df['score_gap'].mean()})
-if 'score_intencao' in df.columns:
+if 'score_intencao' in df.columns and df['score_intencao'].notna().any():
     scores_data.append({"Dimensão": "Intenção", "Score": df['score_intencao'].mean()})
 
 # Scores apenas para quem usou
@@ -166,6 +195,8 @@ if scores_data:
     df_scores = pd.DataFrame(scores_data)
     fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
     st.plotly_chart(fig_scores, width='stretch')
+else:
+    st.info("📊 Nenhum score calculado ainda. Verifique o debug acima.")
 
 # ============================================================
 # PRIORIZAÇÃO
@@ -226,7 +257,7 @@ if not df_problemas.empty:
     st.info(f"💡 **Insight estratégico:** O principal problema identificado é '{top_problema}'. Recomenda-se priorizar ações neste ponto.")
 
 # Insight sobre o gap
-if 'score_gap' in df.columns:
+if 'score_gap' in df.columns and df['score_gap'].notna().any():
     gap_medio = df['score_gap'].mean()
     if gap_medio > 3:
         st.warning(f"⚠️ **Alerta:** O gap entre necessidade ({df['score_necessidade'].mean():.1f}) e suporte percebido ({df['score_suporte'].mean():.1f}) é de {gap_medio:.1f} pontos. Isso indica que os alunos precisam de apoio, mas não sentem que a faculdade oferece.")
