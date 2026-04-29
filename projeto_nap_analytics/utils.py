@@ -1,7 +1,12 @@
 # utils.py
 import pandas as pd
 import numpy as np
+import sys
 import os
+
+# Adiciona o caminho da raiz para importar config
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from config.config import PATH_RAW, JORNADA_COL
 
 def carregar_dados_brutos():
