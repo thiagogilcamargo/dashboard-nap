@@ -1,4 +1,4 @@
-# utils.py
+# utils.py - VERSÃO CORRIGIDA
 import pandas as pd
 import numpy as np
 import os
@@ -31,50 +31,54 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Criar as colunas de score MANUALMENTE com valores de exemplo
-    # para garantir que elas existam
+    # Converte as colunas relevantes para numérico
+    col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
+    col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
+    col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
+    col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+    col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
+    col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
+    col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
     
-    # Pega a primeira coluna numérica para usar como base
-    col_numerica = None
-    for col in df.columns:
-        if 'sentir' in col or 'necessidade' in col:
-            col_numerica = col
-            break
+    # Converte para numérico
+    for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            print(f"✅ {col[:40]}... convertida")
+        else:
+            print(f"❌ Coluna não encontrada: {col[:40]}...")
     
-    if col_numerica:
-        # Converte para numérico
-        df[col_numerica] = pd.to_numeric(df[col_numerica], errors='coerce')
-        
-        # Cria os scores com valores reais (média da coluna encontrada)
-        media_base = df[col_numerica].mean()
-        
-        df['score_necessidade'] = df[col_numerica] * 0.8 + 1  # valores entre 1-9
-        df['score_suporte'] = df[col_numerica] * 0.5 + 1     # valores mais baixos
-        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-        df['score_intencao'] = df[col_numerica] * 0.6 + 1
-    else:
-        # Fallback: criar com valores aleatórios consistentes
-        n = len(df)
-        df['score_necessidade'] = np.random.uniform(6, 9, n)  # necessidade alta
-        df['score_suporte'] = np.random.uniform(3, 6, n)      # suporte baixo
-        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-        df['score_intencao'] = np.random.uniform(4, 7, n)
+    # Calcula os scores
+    df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
+    df['score_suporte'] = df[col_sup]
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
     
-    # Garantir que estão entre 0-10
-    df['score_necessidade'] = df['score_necessidade'].clip(0, 10)
-    df['score_suporte'] = df['score_suporte'].clip(0, 10)
-    df['score_intencao'] = df['score_intencao'].clip(0, 10)
-    
-    print(f"✅ NOVOS scores criados - Necessidade: {df['score_necessidade'].mean():.1f}, Suporte: {df['score_suporte'].mean():.1f}")
+    print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
+    print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
+    print(f"✅ Gap média: {df['score_gap'].mean():.1f}")
     
     return df
 
 def calcular_priorizacao(df):
     problemas = []
-    problemas.append({"Problema": "Falta de informação", "Impacto": 7.5, "Esforço": 2, "Prioridade": 3.75})
-    problemas.append({"Problema": "Preconceito", "Impacto": 5.2, "Esforço": 6, "Prioridade": 0.87})
-    df_problemas = pd.DataFrame(problemas)
-    return df_problemas.sort_values('Prioridade', ascending=False)
+    col_info = "Eu sei a quem recorrer dentro da faculdade quando tenho dificuldades emocionais."
+    if col_info in df.columns:
+        df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
+        impacto_info = 10 - df[col_info].mean()
+        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
+    
+    col_prec = "Sinto que existe um preconceito em procurar apoio psicológico ou pedagógico na instituição."
+    if col_prec in df.columns:
+        df[col_prec] = pd.to_numeric(df[col_prec], errors='coerce')
+        impacto_prec = df[col_prec].mean()
+        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
+    
+    if problemas:
+        df_problemas = pd.DataFrame(problemas)
+        df_problemas['Prioridade'] = df_problemas['Impacto'] / df_problemas['Esforço']
+        return df_problemas.sort_values('Prioridade', ascending=False)
+    return pd.DataFrame()
 
 def limpar_colunas(df):
     return df
