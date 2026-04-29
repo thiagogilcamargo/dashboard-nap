@@ -1,4 +1,3 @@
-# dashboard/app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -82,17 +81,19 @@ st.markdown("### Painel de Jornada e Experiência do Aluno")
 st.markdown("---")
 
 # ============================================================
-# KPIs
+# KPIs (COM VERIFICAÇÃO DE SEGURANÇA)
 # ============================================================
 st.subheader("📊 Visão Geral")
 
-necessidade = df['score_necessidade'].mean()
-suporte = df['score_suporte'].mean()
-gap = df['score_gap'].mean()
-intencao = df['score_intencao'].mean()
-pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100
-pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100
-pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100
+# Verificar se as colunas existem
+necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+
+pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
 
 col1, col2, col3, col4 = st.columns(4)
 col5, col6, col7, col8 = st.columns(4)
