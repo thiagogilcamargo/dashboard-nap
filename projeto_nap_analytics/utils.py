@@ -32,41 +32,80 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Nomes exatos das colunas (do seu diagnóstico)
+    # ============================================================
+    # MÉTODO 1: Tentar encontrar pelos NOMES
+    # ============================================================
     col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
     col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
     col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
     col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
     
-    # Intenção
+    # Verificar se os nomes existem
+    nec1_existe = col_nec1 in df.columns
+    nec2_existe = col_nec2 in df.columns
+    nec3_existe = col_nec3 in df.columns
+    sup_existe = col_sup in df.columns
+    
+    # ============================================================
+    # MÉTODO 2: Se não encontrar pelos nomes, usar índices conhecidos
+    # ============================================================
+    if not (nec1_existe and nec2_existe and nec3_existe and sup_existe):
+        print("⚠️ Colunas não encontradas pelos nomes. Usando índices...")
+        # Baseado no diagnóstico:
+        # Índice 4: "Já senti necessidade..." (antes do range 10-19)
+        # Índice 17: "Eu me sentiria confortável..."
+        # Índice 14: "Acredito que serviços..."
+        # Índice 11: "Eu sinto que há suporte..."
+        
+        # Encontrar dinamicamente: procurar palavras-chave
+        for i, col in enumerate(df.columns):
+            if 'senti necessidade' in col.lower():
+                col_nec1 = col
+                nec1_existe = True
+            if 'confortável' in col.lower():
+                col_nec2 = col
+                nec2_existe = True
+            if 'acredito que serviços' in col.lower():
+                col_nec3 = col
+                nec3_existe = True
+            if 'suporte suficiente para dificuldades emocionais' in col.lower():
+                col_sup = col
+                sup_existe = True
+    
+    # ============================================================
+    # CONVERTER PARA NUMÉRICO E CALCULAR
+    # ============================================================
+    if nec1_existe and nec2_existe and nec3_existe and sup_existe:
+        # Converter para numérico
+        for col in [col_nec1, col_nec2, col_nec3, col_sup]:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[col] = df[col].fillna(0)
+        
+        df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
+        df['score_suporte'] = df[col_sup]
+        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+        
+        print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
+        print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
+    else:
+        print("❌ Não foi possível encontrar as colunas necessárias")
+        df['score_necessidade'] = 0
+        df['score_suporte'] = 0
+        df['score_gap'] = 0
+    
+    # ============================================================
+    # INTENÇÃO (já funcionava)
+    # ============================================================
     col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
     col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
     col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
     
-    # CORREÇÃO 1: Converter para numérico e preencher NaN com 0 (não com média)
-    for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
+    for col in [col_int1, col_int2, col_int3]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[col] = df[col].fillna(0)  # ← MUDANÇA CRÍTICA
-            print(f"✅ {col[:40]}... convertida")
-        else:
-            print(f"❌ Coluna não encontrada: {col[:40]}...")
+            df[col] = df[col].fillna(0)
     
-    # Criar scores
-    df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
-    df['score_suporte'] = df[col_sup]
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
-    
-    # CORREÇÃO 2: Garantir que não haja NaN silencioso
-    df['score_necessidade'] = df['score_necessidade'].fillna(0)
-    df['score_suporte'] = df['score_suporte'].fillna(0)
-    df['score_gap'] = df['score_gap'].fillna(0)
-    df['score_intencao'] = df['score_intencao'].fillna(0)
-    
-    print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
-    print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
-    print(f"✅ Gap média: {df['score_gap'].mean():.1f}")
     
     return df
 
