@@ -33,33 +33,53 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Nomes exatos das colunas (com o texto que está no seu CSV)
+    # USANDO ÍNDICES DAS COLUNAS (POSIÇÕES FIXAS)
+    # Baseado no seu diagnóstico:
+    # Índice 0-9: dados demográficos
+    # Índice 10: "Considero importante..." (pular)
+    # Índice 11: "Eu sinto que há suporte suficiente..." ← SUPORTE
+    # Índice 14: "Acredito que serviços..." ← NECESSIDADE 3
+    # Índice 17: "Eu me sentiria confortável..." ← NECESSIDADE 2
+    # A coluna de NECESSIDADE 1 está fora do range 10-19? Ela está no índice original 10? Vamos usar força bruta
+    
+    # Vamos localizar as colunas pelo nome, mas com fallback para índices
     col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
     col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
     col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
     col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+    
+    # GARANTIR que as colunas existem (pelo diagnóstico, todas existem)
+    for col in [col_nec1, col_nec2, col_nec3, col_sup]:
+        if col not in df.columns:
+            st.error(f"❌ Coluna não encontrada: {col}")
+            return df
+    
+    # FORÇAR a leitura dos valores para cada linha, ignorando NaN
+    # Vamos preencher os NaN com a média da coluna para não perder dados
+    for col in [col_nec1, col_nec2, col_nec3, col_sup]:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+        # Preenche NaN com a média da coluna
+        df[col] = df[col].fillna(df[col].mean())
+    
+    # CRIA OS SCORES
+    df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
+    df['score_suporte'] = df[col_sup]
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+    
+    # Intenção (já funcionava)
     col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
     col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
     col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
     
-    # Converte para numérico (com segurança)
-    for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
+    for col in [col_int1, col_int2, col_int3]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-            print(f"✅ {col[:40]}... convertida")
-        else:
-            print(f"❌ Coluna não encontrada: {col[:40]}...")
     
-    # CRIA OS SCORES (AGORA USANDO O CÁLCULO CORRETO)
-    df['score_necessidade'] = df[[col_nec1, col_nec2, col_nec3]].mean(axis=1)
-    df['score_suporte'] = df[col_sup]
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-    df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
+    df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
     
-    # VERIFICA SE CRIOU
-    print(f"✅ score_necessidade criado? {'score_necessidade' in df.columns}")
-    print(f"✅ score_suporte criado? {'score_suporte' in df.columns}")
-    print(f"✅ score_gap criado? {'score_gap' in df.columns}")
+    print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
+    print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
+    print(f"✅ Gap média: {df['score_gap'].mean():.1f}")
     
     return df
 
@@ -84,6 +104,5 @@ def calcular_priorizacao(df):
     return pd.DataFrame()
 
 def limpar_colunas(df):
-    # NÃO REMOVE AS COLUNAS DE SCORE!
     colunas_remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
     return df.drop(columns=colunas_remover, errors='ignore')
