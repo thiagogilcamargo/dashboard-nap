@@ -1,7 +1,9 @@
+# utils.py
 import pandas as pd
 import numpy as np
 import os
 import streamlit as st
+from difflib import get_close_matches
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
@@ -31,78 +33,193 @@ def aplicar_jornada(df):
         df['Jornada'] = "Indefinido"
     return df
 
+# ============================================================
+# UPGRADE 1: MAPEAMENTO SEMÂNTICO (substitui índices fixos)
+# ============================================================
+
+def normalizar_string(texto: str) -> str:
+    """Normaliza string para matching"""
+    if not isinstance(texto, str):
+        return ""
+    texto = texto.lower()
+    # Remove acentos simples
+    texto = texto.replace("ã", "a").replace("õ", "o").replace("á", "a")
+    texto = texto.replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+    texto = texto.replace("ç", "c")
+    # Remove caracteres especiais
+    texto = ''.join(c for c in texto if c.isalnum() or c.isspace())
+    return texto.strip()
+
+def encontrar_coluna(df, nome_esperado: str, palavras_chave: list) -> str:
+    """
+    Encontra coluna por: 1) nome exato, 2) palavras-chave, 3) fuzzy matching
+    Retorna o nome da coluna ou None se não encontrar
+    """
+    nome_norm = normalizar_string(nome_esperado)
+    
+    # 1. Tentar match exato
+    for col in df.columns:
+        if col == nome_esperado:
+            return col
+    
+    # 2. Tentar por palavras-chave
+    for col in df.columns:
+        col_norm = normalizar_string(col)
+        for palavra in palavras_chave:
+            if normalizar_string(palavra) in col_norm:
+                st.info(f"🔍 Coluna mapeada: '{col}' -> '{nome_esperado[:30]}...'")
+                return col
+    
+    # 3. Tentar fuzzy matching
+    colunas_norm = {col: normalizar_string(col) for col in df.columns}
+    matches = get_close_matches(nome_norm, list(colunas_norm.values()), n=1, cutoff=0.7)
+    if matches:
+        for col, col_norm in colunas_norm.items():
+            if col_norm == matches[0]:
+                st.warning(f"⚠️ Fuzzy match: '{col}' -> '{nome_esperado[:30]}...'")
+                return col
+    
+    return None
+
+# ============================================================
+# UPGRADE 2 e 3: Score com confiança (sem fillna(0))
+# ============================================================
+
+def calcular_score_com_confianca(df, colunas, nome_score, min_respostas=2):
+    """
+    Calcula score APENAS para linhas com número mínimo de respostas.
+    Retorna (score_series, confidence_series)
+    """
+    # Conta quantas respostas válidas por linha
+    validas = df[colunas].notna().sum(axis=1)
+    
+    # Calcula média (ignorando NaN)
+    media = df[colunas].mean(axis=1, skipna=True)
+    
+    # Só mantém média se tiver o mínimo de respostas
+    score = media.where(validas >= min_respostas, np.nan)
+    
+    # Confiança: percentual de respostas válidas (0-1)
+    confianca = validas / len(colunas)
+    
+    return score, confianca
+
 def calcular_scores_dataframe(df):
     """
-    Versão com ÍNDICES FIXOS baseado no diagnóstico do seu CSV
-    Isso é MAIS CONFIÁVEL que busca por texto
+    Versão com mapeamento semântico + score com confiança
+    SEM fillna(0) - NUNCA inventa dados
     """
     
-    # Índices confirmados do seu CSV
-    idx_nec1 = 4   # "Já senti necessidade..."
-    idx_nec2 = 17  # "Eu me sentiria confortável..."
-    idx_nec3 = 14  # "Acredito que serviços..."
-    idx_sup = 11   # "Eu sinto que há suporte..."
-    idx_int1 = 19  # "Eu já pensei em utilizar..."
-    idx_int2 = 21  # "Tenho confiança na confidencialidade..."
-    idx_int3 = 20  # "Eu sei como acessar..."
+    # ============================================================
+    # MAPEAMENTO DAS COLUNAS (SEM ÍNDICES FIXOS)
+    # ============================================================
+    col_nec1 = encontrar_coluna(df, 
+        "Já senti necessidade de apoio emocional durante a graduação.",
+        ["necessidade", "apoio emocional", "senti necessidade"])
     
-    # Validar índices
-    max_idx = len(df.columns) - 1
-    if max(idx_nec1, idx_nec2, idx_nec3, idx_sup, idx_int1, idx_int2, idx_int3) > max_idx:
-        st.error(f"❌ Índices fora do range. Max colunas: {max_idx}")
-        # Criar scores vazios
-        df['score_necessidade'] = 7.5
-        df['score_suporte'] = 4.2
-        df['score_gap'] = 3.3
-        df['score_intencao'] = 5.2
-        return df
+    col_nec2 = encontrar_coluna(df,
+        "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
+        ["confortável", "procurar ajuda", "confortavel"])
     
-    # Pegar as colunas pelos índices
-    col_nec1 = df.columns[idx_nec1]
-    col_nec2 = df.columns[idx_nec2]
-    col_nec3 = df.columns[idx_nec3]
-    col_sup = df.columns[idx_sup]
-    col_int1 = df.columns[idx_int1]
-    col_int2 = df.columns[idx_int2]
-    col_int3 = df.columns[idx_int3]
+    col_nec3 = encontrar_coluna(df,
+        "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.",
+        ["acredito", "serviços", "melhorar", "experiência acadêmica"])
     
-    # Converter para numérico
-    for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+    col_sup = encontrar_coluna(df,
+        "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
+        ["suporte", "suficiente", "dificuldades emocionais"])
     
-    # Calcular scores
-    df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
-    df['score_suporte'] = df[col_sup]
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-    df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
+    col_int1 = encontrar_coluna(df,
+        "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
+        ["pensei", "utilizar", "NAP"])
     
-    # Preencher NaN com 0 (para não quebrar o dashboard)
-    df['score_necessidade'] = df['score_necessidade'].fillna(0)
-    df['score_suporte'] = df['score_suporte'].fillna(0)
-    df['score_gap'] = df['score_gap'].fillna(0)
-    df['score_intencao'] = df['score_intencao'].fillna(0)
+    col_int2 = encontrar_coluna(df,
+        "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).",
+        ["confiança", "confidencialidade"])
     
-    # Debug
-    st.info(f"📊 Scores calculados: Necessidade={df['score_necessidade'].mean():.1f}, Suporte={df['score_suporte'].mean():.1f}")
+    col_int3 = encontrar_coluna(df,
+        "Eu sei como acessar os serviços oferecidos pelo NAP (Núcleo de Apoio Psicopedagógico).",
+        ["acessar", "serviços", "oferecidos"])
+    
+    # ============================================================
+    # VALIDAÇÃO DAS COLUNAS
+    # ============================================================
+    colunas_necessidade = [c for c in [col_nec1, col_nec2, col_nec3] if c]
+    colunas_intencao = [c for c in [col_int1, col_int2, col_int3] if c]
+    
+    if len(colunas_necessidade) < 2:
+        st.error("❌ Colunas de necessidade não encontradas. Verifique o CSV.")
+        df['score_necessidade'] = np.nan
+        df['score_necessidade_confianca'] = 0
+    else:
+        # Converter para numérico
+        for col in colunas_necessidade + [col_sup] + colunas_intencao:
+            if col:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Score de Necessidade (com confiança)
+        df['score_necessidade'], df['score_necessidade_confianca'] = calcular_score_com_confianca(
+            df, colunas_necessidade, "necessidade", min_respostas=2
+        )
+        
+        # Score de Suporte
+        if col_sup:
+            df['score_suporte'] = df[col_sup]
+            df['score_suporte_confianca'] = df[col_sup].notna().astype(float)
+        else:
+            df['score_suporte'] = np.nan
+            df['score_suporte_confianca'] = 0
+        
+        # Score de Intenção
+        if len(colunas_intencao) >= 2:
+            df['score_intencao'], df['score_intencao_confianca'] = calcular_score_com_confianca(
+                df, colunas_intencao, "intencao", min_respostas=2
+            )
+        else:
+            df['score_intencao'] = np.nan
+            df['score_intencao_confianca'] = 0
+        
+        # Gap (só calcula se ambos existirem)
+        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+        df['score_gap_confianca'] = df[['score_necessidade_confianca', 'score_suporte_confianca']].min(axis=1)
+    
+    # ============================================================
+    # DEBUG (mostra o que foi encontrado)
+    # ============================================================
+    st.info(f"🔍 Mapeamento de colunas:")
+    st.info(f"   Necessidade: {[c for c in [col_nec1, col_nec2, col_nec3] if c]}")
+    st.info(f"   Suporte: {col_sup}")
+    st.info(f"   Intenção: {[c for c in [col_int1, col_int2, col_int3] if c]}")
+    
+    validos = df['score_necessidade'].notna().sum()
+    st.info(f"📊 Necessidade: média={df['score_necessidade'].mean():.1f}/10 (válidos: {validos}/{len(df)})")
     
     return df
 
 def calcular_priorizacao(df):
     problemas = []
     
-    # Buscar coluna de informação (índice 13)
-    if len(df.columns) > 13:
-        col_info = df.columns[13]
-        df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
-        impacto_info = 10 - df[col_info].mean()
-        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
+    # Buscar coluna de informação
+    col_info = encontrar_coluna(df,
+        "Eu sei a quem recorrer dentro da faculdade quando tenho dificuldades emocionais.",
+        ["sei a quem recorrer", "dificuldades emocionais"])
     
-    # Buscar coluna de preconceito (índice 25)
-    if len(df.columns) > 25:
-        col_prec = df.columns[25]
+    if col_info:
+        df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
+        if df[col_info].notna().sum() > 10:
+            impacto_info = 10 - df[col_info].mean()
+            problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
+    
+    # Buscar coluna de preconceito
+    col_prec = encontrar_coluna(df,
+        "Sinto que existe um preconceito em procurar apoio psicológico ou pedagógico na instituição.",
+        ["preconceito", "procurar apoio"])
+    
+    if col_prec:
         df[col_prec] = pd.to_numeric(df[col_prec], errors='coerce')
-        impacto_prec = df[col_prec].mean()
-        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
+        if df[col_prec].notna().sum() > 10:
+            impacto_prec = df[col_prec].mean()
+            problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
     
     if problemas:
         df_problemas = pd.DataFrame(problemas)
