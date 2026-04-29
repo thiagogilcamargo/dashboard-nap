@@ -29,7 +29,38 @@ df = carregar_e_processar()
 df_problemas = calcular_priorizacao(df)
 
 # ============================================================
-# SIDEBAR COM FILTROS (idêntico ao seu, mantido)
+# 🔍 DIAGNÓSTICO DAS COLUNAS (REMOVA DEPOIS)
+# ============================================================
+with st.expander("🔍 DIAGNÓSTICO - Colunas do CSV"):
+    st.write("### Colunas 10 a 20:")
+    for i in range(10, min(20, len(df.columns))):
+        st.write(f"{i}: {df.columns[i]}")
+    
+    st.write("### Busca por palavras-chave:")
+    palavras = ['necessidade', 'confortável', 'acredito', 'suporte']
+    for palavra in palavras:
+        encontradas = [col for col in df.columns if palavra in col.lower()]
+        st.write(f"'{palavra}': {encontradas}")
+    
+    st.write("### Verificando colunas de score no DataFrame:")
+    score_cols = [col for col in df.columns if 'score' in col]
+    st.write(f"Colunas de score encontradas: {score_cols}")
+    
+    st.write("### Primeiras 5 linhas das colunas esperadas:")
+    col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
+    col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
+    col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
+    col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+    
+    for col in [col_nec1, col_nec2, col_nec3, col_sup]:
+        if col in df.columns:
+            st.write(f"✅ {col[:40]}... existe")
+            st.write(f"   Valores: {df[col].head(3).tolist()}")
+        else:
+            st.write(f"❌ {col[:40]}... NÃO EXISTE")
+
+# ============================================================
+# SIDEBAR COM FILTROS
 # ============================================================
 st.sidebar.title("🎛️ Filtros")
 st.sidebar.markdown("---")
@@ -81,7 +112,7 @@ st.title("🧠 NAP — Núcleo de Apoio Psicopedagógico")
 st.markdown("### Painel de Jornada e Experiência do Aluno")
 
 # ============================================================
-# KPIS (COM NECESSIDADE, SUPORTE E GAP)
+# KPIS
 # ============================================================
 st.subheader("📊 Visão Geral")
 
@@ -141,7 +172,7 @@ if 'Jornada' in df.columns:
     st.plotly_chart(fig, width='stretch')
 
 # ============================================================
-# SCORES POR DIMENSÃO (COM NECESSIDADE E SUPORTE)
+# SCORES POR DIMENSÃO
 # ============================================================
 st.subheader("📊 Scores por Dimensão")
 scores_data = []
@@ -227,13 +258,3 @@ st.success("✅ Dashboard completo com Necessidade vs Suporte!")
 if not df_problemas.empty:
     top_problema = df_problemas.iloc[0]['Problema']
     st.info(f"💡 **Insight estratégico:** O principal problema identificado é '{top_problema}'. Recomenda-se priorizar ações neste ponto.")
-
-# Insight sobre o gap
-if 'score_gap' in df.columns and df['score_gap'].notna().any():
-    gap_medio = df['score_gap'].mean()
-    if gap_medio > 3:
-        st.warning(f"⚠️ **Alerta:** O gap entre necessidade ({df['score_necessidade'].mean():.1f}) e suporte percebido ({df['score_suporte'].mean():.1f}) é de {gap_medio:.1f} pontos.")
-    elif gap_medio > 1:
-        st.info(f"📌 **Atenção:** Diferença de {gap_medio:.1f} pontos entre necessidade e suporte.")
-    else:
-        st.success(f"✅ **Bom:** Suporte alinhado com necessidade (gap de {gap_medio:.1f} pontos).")
