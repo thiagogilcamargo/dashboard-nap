@@ -1,13 +1,18 @@
-# utils.py - VERSÃO CORRIGIDA
+# utils.py - VERSÃO FINAL CORRIGIDA
 import pandas as pd
 import numpy as np
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# CORREÇÃO 1: BASE_DIR correto
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
 
 def carregar_dados_brutos():
     df = pd.read_csv(PATH_RAW, encoding='utf-8-sig')
+    
+    # CORREÇÃO 2: Limpar nomes das colunas
+    df.columns = df.columns.str.replace("\n", " ").str.strip()
+    
     df = df.replace(r'^\s*$', np.nan, regex=True)
     return df
 
@@ -31,7 +36,7 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Converte as colunas relevantes para numérico
+    # Nomes exatos das colunas
     col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
     col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
     col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
@@ -48,11 +53,13 @@ def calcular_scores_dataframe(df):
         else:
             print(f"❌ Coluna não encontrada: {col[:40]}...")
     
-    # Calcula os scores
-    df['score_necessidade'] = (df[col_nec1] + df[col_nec2] + df[col_nec3]) / 3
+    # CORREÇÃO 3: Cálculo com NaN seguro
+    df['score_necessidade'] = df[[col_nec1, col_nec2, col_nec3]].mean(axis=1)
     df['score_suporte'] = df[col_sup]
-    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-    df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
+    df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
+    
+    # CORREÇÃO 4: Gap seguro contra NaN
+    df['score_gap'] = df['score_necessidade'].fillna(0) - df['score_suporte'].fillna(0)
     
     print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
     print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
@@ -81,4 +88,6 @@ def calcular_priorizacao(df):
     return pd.DataFrame()
 
 def limpar_colunas(df):
-    return df
+    # CORREÇÃO EXTRA: Não remover colunas de score
+    colunas_remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
+    return df.drop(columns=colunas_remover, errors='ignore')
