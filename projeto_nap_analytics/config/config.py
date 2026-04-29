@@ -7,24 +7,35 @@ import os
 # =====================================
 # CAMINHOS (funciona local e na nuvem)
 # =====================================
-# Detecta onde o script está rodando
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Caminhos absolutos (funcionam em qualquer lugar)
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
 PATH_PROCESSED = os.path.join(BASE_DIR, "dados", "processed", "dados_modelados.csv")
 PATH_PROBLEMAS = os.path.join(BASE_DIR, "dados", "processed", "problemas_priorizados.csv")
 PATH_PDF = os.path.join(BASE_DIR, "outputs", "relatorio_nap.pdf")
 
 # =====================================
-# SUAS CONFIGURAÇÕES (INALTERADAS)
+# SCORES DE PERCEPÇÃO (SEPARADOS)
 # =====================================
-PERCEPCAO_COLS = [
+
+# Necessidade e abertura do aluno (o que ele sente/precisa)
+NECESSIDADE_COLS = [
     "Já senti necessidade de apoio emocional durante a graduação.",
     "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
-    "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
     "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
 ]
+
+# Percepção do suporte oferecido pela faculdade (o que a instituição oferece)
+SUPORTE_COLS = [
+    "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+]
+
+# Mantido para compatibilidade (não usar mais)
+PERCEPCAO_COLS = NECESSIDADE_COLS + SUPORTE_COLS
+
+# =====================================
+# OUTROS SCORES
+# =====================================
 
 INTENCAO_COLS = [
     "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
