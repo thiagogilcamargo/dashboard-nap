@@ -1,8 +1,10 @@
+# dashboard/app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import sys
 import os
+import numpy as np
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -81,15 +83,20 @@ st.markdown("### Painel de Jornada e Experiência do Aluno")
 st.markdown("---")
 
 # ============================================================
-# KPIs (COM VERIFICAÇÃO DE SEGURANÇA)
+# KPIs (COM CONFIANÇA)
 # ============================================================
 st.subheader("📊 Visão Geral")
 
-# Verificar se as colunas existem
-necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
-suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
-gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
-intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+# Calcular médias (ignorando NaN)
+necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else np.nan
+suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else np.nan
+gap = df['score_gap'].mean() if 'score_gap' in df.columns else np.nan
+intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else np.nan
+
+# Contagem de respostas válidas
+n_necessidade_validos = df['score_necessidade'].notna().sum() if 'score_necessidade' in df.columns else 0
+n_suporte_validos = df['score_suporte'].notna().sum() if 'score_suporte' in df.columns else 0
+n_intencao_validos = df['score_intencao'].notna().sum() if 'score_intencao' in df.columns else 0
 
 pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
 pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
@@ -103,17 +110,33 @@ with col1:
 with col2:
     st.metric("✅ Já usaram", f"{pct_usou:.0f}%")
 with col3:
-    st.metric("🎯 Necessidade", f"{necessidade:.1f}/10")
+    if pd.isna(necessidade):
+        st.metric("🎯 Necessidade", "⚠️ Dados insuficientes")
+    else:
+        st.metric("🎯 Necessidade", f"{necessidade:.1f}/10", help=f"Baseado em {n_necessidade_validos} respostas")
 with col4:
-    st.metric("🏫 Suporte", f"{suporte:.1f}/10")
+    if pd.isna(suporte):
+        st.metric("🏫 Suporte", "⚠️ Dados insuficientes")
+    else:
+        st.metric("🏫 Suporte", f"{suporte:.1f}/10", help=f"Baseado em {n_suporte_validos} respostas")
 with col5:
-    st.metric("📊 Gap", f"{gap:.1f}")
+    if pd.isna(gap):
+        st.metric("📊 Gap", "⚠️ Dados insuficientes")
+    else:
+        st.metric("📊 Gap", f"{gap:.1f}")
 with col6:
-    st.metric("🎯 Intenção", f"{intencao:.1f}/10")
+    if pd.isna(intencao):
+        st.metric("🎯 Intenção", "⚠️ Dados insuficientes")
+    else:
+        st.metric("🎯 Intenção", f"{intencao:.1f}/10", help=f"Baseado em {n_intencao_validos} respostas")
 with col7:
     st.metric("👀 Conhecem", f"{pct_conhece:.0f}%")
 with col8:
     st.metric("❌ Desconhecem", f"{pct_nao_conhece:.0f}%")
+
+# Aviso de dados insuficientes
+if n_necessidade_validos < len(df) * 0.5:
+    st.warning(f"⚠️ Atenção: Apenas {n_necessidade_validos}/{len(df)} respostas válidas para Necessidade")
 
 # ============================================================
 # FUNIL DE ADOÇÃO
@@ -127,18 +150,27 @@ if 'Jornada' in df.columns:
     st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
-# SCORES POR DIMENSÃO
+# SCORES POR DIMENSÃO (COM CONFIANÇA)
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Scores por Dimensão")
-scores_data = [
-    {"Dimensão": "Necessidade", "Score": necessidade},
-    {"Dimensão": "Suporte", "Score": suporte},
-    {"Dimensão": "Intenção", "Score": intencao},
-]
-df_scores = pd.DataFrame(scores_data)
-fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
-st.plotly_chart(fig_scores, use_container_width=True)
+
+scores_data = []
+if not pd.isna(necessidade):
+    scores_data.append({"Dimensão": "Necessidade", "Score": necessidade, "Válidos": n_necessidade_validos})
+if not pd.isna(suporte):
+    scores_data.append({"Dimensão": "Suporte", "Score": suporte, "Válidos": n_suporte_validos})
+if not pd.isna(intencao):
+    scores_data.append({"Dimensão": "Intenção", "Score": intencao, "Válidos": n_intencao_validos})
+
+if scores_data:
+    df_scores = pd.DataFrame(scores_data)
+    fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
+    st.plotly_chart(fig_scores, use_container_width=True)
+    
+    # Mostrar tabela de confiança
+    with st.expander("📋 Detalhamento da confiança dos dados"):
+        st.dataframe(df_scores)
 
 # ============================================================
 # PRIORIZAÇÃO
@@ -195,6 +227,13 @@ if 'Campus' in df.columns:
 # ============================================================
 st.markdown("---")
 st.success("✅ Dashboard completo!")
+
+if not pd.isna(necessidade) and not pd.isna(suporte):
+    if necessidade > 7 and suporte < 5:
+        st.warning(f"⚠️ **Alerta estratégico:** Alta necessidade ({necessidade:.1f}/10) mas baixo suporte percebido ({suporte:.1f}/10). Gap de {gap:.1f} pontos.")
+    elif necessidade > suporte + 2:
+        st.info(f"📌 **Atenção:** Necessidade ({necessidade:.1f}) é significativamente maior que o suporte percebido ({suporte:.1f}).")
+
 if not df_problemas.empty:
     top_problema = df_problemas.iloc[0]['Problema']
     st.info(f"💡 **Insight estratégico:** O principal problema identificado é '{top_problema}'. Recomenda-se priorizar ações neste ponto.")
