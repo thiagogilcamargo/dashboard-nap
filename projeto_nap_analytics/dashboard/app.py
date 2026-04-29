@@ -1,3 +1,4 @@
+# dashboard/app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -27,7 +28,9 @@ def carregar_e_processar():
 df = carregar_e_processar()
 df_problemas = calcular_priorizacao(df)
 
-# Sidebar
+# ============================================================
+# SIDEBAR COM FILTROS
+# ============================================================
 st.sidebar.title("🎛️ Filtros")
 st.sidebar.markdown("---")
 
@@ -71,21 +74,25 @@ if 'Jornada' in df.columns:
 st.sidebar.markdown("---")
 st.sidebar.caption(f"📊 Mostrando **{len(df)}** registros")
 
-# Dashboard principal
+# ============================================================
+# DASHBOARD PRINCIPAL
+# ============================================================
 st.title("🧠 NAP — Núcleo de Apoio Psicopedagógico")
 st.markdown("### Painel de Jornada e Experiência do Aluno")
 st.markdown("---")
 
+# ============================================================
+# KPIs
+# ============================================================
 st.subheader("📊 Visão Geral")
 
-necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
-suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
-gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
-intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
-
-pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
-pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
-pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
+necessidade = df['score_necessidade'].mean()
+suporte = df['score_suporte'].mean()
+gap = df['score_gap'].mean()
+intencao = df['score_intencao'].mean()
+pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100
+pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100
+pct_nao_conhece = (df['Jornada'] == 'Não conhece NAP').mean() * 100
 
 col1, col2, col3, col4 = st.columns(4)
 col5, col6, col7, col8 = st.columns(4)
@@ -107,7 +114,9 @@ with col7:
 with col8:
     st.metric("❌ Desconhecem", f"{pct_nao_conhece:.0f}%")
 
-# Funil de adoção
+# ============================================================
+# FUNIL DE ADOÇÃO
+# ============================================================
 st.markdown("---")
 st.subheader("📊 Funil de Adoção")
 if 'Jornada' in df.columns:
@@ -116,7 +125,9 @@ if 'Jornada' in df.columns:
     fig = px.bar(funil, x='Status', y='Quantidade', color='Status', text='Quantidade')
     st.plotly_chart(fig, use_container_width=True)
 
-# Scores por dimensão
+# ============================================================
+# SCORES POR DIMENSÃO
+# ============================================================
 st.markdown("---")
 st.subheader("📊 Scores por Dimensão")
 scores_data = [
@@ -128,7 +139,9 @@ df_scores = pd.DataFrame(scores_data)
 fig_scores = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
 st.plotly_chart(fig_scores, use_container_width=True)
 
-# Priorização
+# ============================================================
+# PRIORIZAÇÃO
+# ============================================================
 st.markdown("---")
 st.subheader("🎯 Priorização de Problemas")
 if not df_problemas.empty:
@@ -137,7 +150,9 @@ if not df_problemas.empty:
     with st.expander("📋 Detalhamento"):
         st.dataframe(df_problemas[['Problema', 'Impacto', 'Esforço', 'Prioridade']])
 
-# Distribuições
+# ============================================================
+# DISTRIBUIÇÕES DEMOGRÁFICAS
+# ============================================================
 st.markdown("---")
 st.subheader("📈 Distribuições Demográficas")
 col_esq, col_meio, col_dir = st.columns(3)
@@ -163,7 +178,9 @@ with col_dir:
         fig_per = px.pie(periodo_counts, values='Quantidade', names='Período')
         st.plotly_chart(fig_per, use_container_width=True)
 
-# Campus
+# ============================================================
+# CAMPUS
+# ============================================================
 st.markdown("---")
 if 'Campus' in df.columns:
     st.subheader("🏢 Distribuição por Campus")
@@ -172,7 +189,9 @@ if 'Campus' in df.columns:
     fig_campus = px.bar(campus_counts, x='Campus', y='Quantidade', color='Campus', text='Quantidade')
     st.plotly_chart(fig_campus, use_container_width=True)
 
-# Insight
+# ============================================================
+# INSIGHT
+# ============================================================
 st.markdown("---")
 st.success("✅ Dashboard completo!")
 if not df_problemas.empty:
