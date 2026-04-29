@@ -31,68 +31,50 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # USANDO ÍNDICES DIRETOS DAS COLUNAS
-    # Com base na sua listagem: 
-    # índice 10 = Necessidade 1
-    # índice 19 = Conforto (Necessidade 2)
-    # índice 16 = Acredita (Necessidade 3)
-    # índice 13 = Suporte
-    # índice 21, 22, 23 = Intenção
+    # Pega as colunas pelo nome EXATO (copia do seu CSV)
+    col_nec = "Já senti necessidade de apoio emocional durante a graduação."
+    col_conf = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
+    col_acred = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
+    col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
     
-    # Converter para numérico usando iloc (posição, não nome)
-    for i in [10, 13, 16, 19, 21, 22, 23]:
-        if i < len(df.columns):
-            df.iloc[:, i] = pd.to_numeric(df.iloc[:, i], errors='coerce')
+    # Converte para número
+    df[col_nec] = pd.to_numeric(df[col_nec], errors='coerce')
+    df[col_conf] = pd.to_numeric(df[col_conf], errors='coerce')
+    df[col_acred] = pd.to_numeric(df[col_acred], errors='coerce')
+    df[col_sup] = pd.to_numeric(df[col_sup], errors='coerce')
     
-    # Necessidade = média das colunas 10, 19, 16
-    df['score_necessidade'] = (
-        df.iloc[:, 10] + df.iloc[:, 19] + df.iloc[:, 16]
-    ) / 3
-    
-    # Suporte = coluna 13
-    df['score_suporte'] = df.iloc[:, 13]
-    
-    # Gap
+    # Calcula
+    df['score_necessidade'] = (df[col_nec] + df[col_conf] + df[col_acred]) / 3
+    df['score_suporte'] = df[col_sup]
     df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     
-    # Intenção = média das colunas 21, 22, 23
-    df['score_intencao'] = (
-        df.iloc[:, 21] + df.iloc[:, 22] + df.iloc[:, 23]
-    ) / 3
-    
-    print(f"✅ Necessidade média: {df['score_necessidade'].mean():.1f}")
-    print(f"✅ Suporte média: {df['score_suporte'].mean():.1f}")
-    print(f"✅ Gap média: {df['score_gap'].mean():.1f}")
+    # Intenção
+    col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
+    col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
+    col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
+    df[col_int1] = pd.to_numeric(df[col_int1], errors='coerce')
+    df[col_int2] = pd.to_numeric(df[col_int2], errors='coerce')
+    df[col_int3] = pd.to_numeric(df[col_int3], errors='coerce')
+    df['score_intencao'] = (df[col_int1] + df[col_int2] + df[col_int3]) / 3
     
     return df
 
 def calcular_priorizacao(df):
+    # Versão simplificada
     problemas = []
-    
-    # coluna 15 = "Eu sei a quem recorrer..."
-    if 15 < len(df.columns):
-        col_data = pd.to_numeric(df.iloc[:, 15], errors='coerce')
-        impacto_info = 10 - col_data.mean()
+    try:
+        col_info = "Eu sei a quem recorrer dentro da faculdade quando tenho dificuldades emocionais."
+        df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
+        impacto_info = 10 - df[col_info].mean()
         problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
-    
-    # coluna 25 = "Sinto que existe preconceito..."
-    if 25 < len(df.columns):
-        col_data = pd.to_numeric(df.iloc[:, 25], errors='coerce')
-        impacto_prec = col_data.mean()
-        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
-    
-    if problemas:
-        df_problemas = pd.DataFrame(problemas)
-        if df_problemas['Impacto'].max() != df_problemas['Impacto'].min():
-            df_problemas['Impacto_norm'] = (df_problemas['Impacto'] - df_problemas['Impacto'].min()) / (df_problemas['Impacto'].max() - df_problemas['Impacto'].min())
-        else:
-            df_problemas['Impacto_norm'] = 0
-        df_problemas['Esforço_norm'] = (df_problemas['Esforço'] - df_problemas['Esforço'].min()) / (df_problemas['Esforço'].max() - df_problemas['Esforço'].min())
-        df_problemas['Prioridade'] = df_problemas['Impacto_norm'] * (1 - df_problemas['Esforço_norm'])
+    except:
+        pass
+    df_problemas = pd.DataFrame(problemas)
+    if not df_problemas.empty:
+        df_problemas['Prioridade'] = df_problemas['Impacto'] / df_problemas['Esforço']
         return df_problemas.sort_values('Prioridade', ascending=False)
-    
     return pd.DataFrame()
 
 def limpar_colunas(df):
-    colunas_remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
-    return df.drop(columns=colunas_remover, errors='ignore')
+    # NÃO REMOVE NADA IMPORTANTE
+    return df
