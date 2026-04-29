@@ -4,10 +4,10 @@ import plotly.express as px
 import sys
 import os
 
-# IMPORT CORRETO
-sys.path.append(os.path.dirname(__file__))
+# 🔥 IMPORT CORRETO (ESSENCIAL)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils import (
+from dashboard.utils import (
     carregar_dados_brutos,
     aplicar_jornada,
     calcular_scores,
@@ -16,7 +16,9 @@ from utils import (
 
 st.set_page_config(page_title="NAP Analytics", layout="wide")
 
-
+# ============================================================
+# CACHE
+# ============================================================
 @st.cache_data
 def carregar_e_processar():
     df = carregar_dados_brutos()
@@ -25,9 +27,7 @@ def carregar_e_processar():
     df = limpar_colunas(df)
     return df
 
-
 df = carregar_e_processar()
-
 
 # ============================================================
 # KPIs
@@ -35,9 +35,7 @@ df = carregar_e_processar()
 st.title("🧠 NAP Analytics")
 
 st.metric("Total respostas", len(df))
-
 st.metric("Necessidade média", round(df["score_necessidade"].mean(), 2))
-st.metric("Suporte médio", round(df["score_suporte"].mean(), 2))
 st.metric("Intenção média", round(df["score_intencao"].mean(), 2))
 
 # ============================================================
@@ -51,3 +49,8 @@ if "Jornada" in df.columns:
 
     fig = px.bar(funil, x="Status", y="Quantidade", text="Quantidade")
     st.plotly_chart(fig, use_container_width=True)
+
+# ============================================================
+# ALERTA FINAL
+# ============================================================
+st.success("Dashboard rodando 🚀")
