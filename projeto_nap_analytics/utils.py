@@ -1,7 +1,6 @@
-# dashboard/utils.py
+# utils.py
 import pandas as pd
 import numpy as np
-import streamlit as st
 from config import PATH_RAW, JORNADA_COL
 
 def carregar_dados_brutos():
@@ -29,7 +28,6 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores(df):
-    # Score de Percepção
     cols_perc = [
         "Já senti necessidade de apoio emocional durante a graduação.",
         "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
@@ -41,12 +39,10 @@ def calcular_scores(df):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    df['score_percepcao'] = df[cols_perc].mean(axis=1)
+    df['score_necessidade'] = df[cols_perc[:3]].mean(axis=1) if len(cols_perc) >= 3 else np.nan
+    df['score_suporte'] = df[cols_perc[2]] if len(cols_perc) > 2 else np.nan
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     
-    # Score de Necessidade
-    df['score_necessidade'] = df[cols_perc[:3] + [cols_perc[3]]].mean(axis=1) if len(cols_perc) >= 4 else np.nan
-    
-    # Score de Intenção
     cols_int = [
         "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
         "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).",
@@ -62,9 +58,3 @@ def calcular_scores(df):
 def limpar_colunas(df):
     remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
     return df.drop(columns=remover, errors='ignore')
-
-def calcular_priorizacao(df):
-    return pd.DataFrame([{"Problema": "Falta de informação", "Impacto": 7.5, "Esforço": 2, "Prioridade": 3.75}])
-
-def relatorio_qualidade_dados(df):
-    return {}
