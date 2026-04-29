@@ -1,11 +1,22 @@
+# utils.py
 import pandas as pd
 import numpy as np
 import os
+import streamlit as st
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
 
+# Importa as configurações
+from config.config import (
+    NECESSIDADE_COLS, 
+    SUPORTE_COLS, 
+    INTENCAO_COLS, 
+    JORNADA_COL
+)
+
 def carregar_dados_brutos():
+    """Carrega e limpa os dados brutos"""
     df = pd.read_csv(PATH_RAW, encoding='utf-8-sig')
     df.columns = df.columns.str.replace("\n", " ").str.strip()
     df = df.replace(r'^\s*$', np.nan, regex=True)
@@ -23,96 +34,66 @@ def classificar_jornada(valor):
     return "Indefinido"
 
 def aplicar_jornada(df):
-    col_jornada = "Quais da opções abaixo melhor representa você em relação ao NAP (Núcleo de Apoio Psicopedagógico)?"
-    if col_jornada in df.columns:
-        df['Jornada'] = df[col_jornada].apply(classificar_jornada)
+    if JORNADA_COL in df.columns:
+        df['Jornada'] = df[JORNADA_COL].apply(classificar_jornada)
     else:
         df['Jornada'] = "Indefinido"
     return df
 
+def validar_colunas(df, colunas, contexto):
+    """Valida se todas as colunas existem no DataFrame"""
+    faltando = [col for col in colunas if col not in df.columns]
+    if faltando:
+        st.error(f"❌ {contexto}: Colunas não encontradas: {faltando}")
+        return False
+    return True
+
 def calcular_scores_dataframe(df):
-    # Buscar colunas por palavras-chave
-    col_nec1 = None
-    col_nec2 = None
-    col_nec3 = None
-    col_sup = None
+    """Calcula todos os scores com validação rigorosa"""
     
-    for col in df.columns:
-        col_lower = col.lower()
-        if 'senti necessidade' in col_lower:
-            col_nec1 = col
-        elif 'confortável' in col_lower and 'procurar ajuda' in col_lower:
-            col_nec2 = col
-        elif 'acredito que serviços' in col_lower:
-            col_nec3 = col
-        elif 'suporte suficiente' in col_lower and 'emocionais' in col_lower:
-            col_sup = col
+    # 1. Validar colunas de Necessidade
+    if not validar_colunas(df, NECESSIDADE_COLS, "Necessidade"):
+        st.stop()
     
-    # Converter para numérico
-    for col in [col_nec1, col_nec2, col_nec3, col_sup]:
-        if col and col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+    # 2. Validar colunas de Suporte
+    if not validar_colunas(df, SUPORTE_COLS, "Suporte"):
+        st.stop()
     
-    # Criar scores
-    if col_nec1 and col_nec2 and col_nec3 and col_sup:
-        df['score_necessidade'] = df[[col_nec1, col_nec2, col_nec3]].mean(axis=1)
-        df['score_suporte'] = df[col_sup]
-        df['score_gap'] = df['score_necessidade'] - df['score_suporte']
-    else:
-        # Fallback
-        df['score_necessidade'] = 7.5
-        df['score_suporte'] = 4.2
-        df['score_gap'] = 3.3
+    # 3. Validar colunas de Intenção
+    if not validar_colunas(df, INTENCAO_COLS, "Intenção"):
+        st.stop()
     
-    # Intenção
-    col_int1 = None
-    col_int2 = None
-    col_int3 = None
-    for col in df.columns:
-        col_lower = col.lower()
-        if 'pensei em utilizar' in col_lower:
-            col_int1 = col
-        elif 'confiança na confidencialidade' in col_lower:
-            col_int2 = col
-        elif 'sei como acessar' in col_lower:
-            col_int3 = col
+    # 4. Converter para numérico (SEM fillna, preservar NaN)
+    for col in NECESSIDADE_COLS + SUPORTE_COLS + INTENCAO_COLS:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    if col_int1 and col_int2 and col_int3:
-        for col in [col_int1, col_int2, col_int3]:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-        df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
-    else:
-        df['score_intencao'] = 5.2
+    # 5. Calcular scores
+    df['score_necessidade'] = df[NECESSIDADE_COLS].mean(axis=1, skipna=True)
+    df['score_suporte'] = df[SUPORTE_COLS[0]]
+    df['score_intencao'] = df[INTENCAO_COLS].mean(axis=1, skipna=True)
+    df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     
-    # Preencher NaN
-    for col in ['score_necessidade', 'score_suporte', 'score_gap', 'score_intencao']:
-        if col in df.columns:
-            df[col] = df[col].fillna(df[col].mean())
+    # 6. Debug info (mostra no Streamlit)
+    st.info(f"📊 Scores calculados:")
+    st.info(f"   Necessidade: {df['score_necessidade'].mean():.1f}/10")
+    st.info(f"   Suporte: {df['score_suporte'].mean():.1f}/10")
+    st.info(f"   Gap: {df['score_gap'].mean():.1f}")
+    st.info(f"   Intenção: {df['score_intencao'].mean():.1f}/10")
     
     return df
 
 def calcular_priorizacao(df):
+    """Calcula priorização com base em colunas conhecidas"""
     problemas = []
     
-    col_info = None
-    for col in df.columns:
-        if 'sei a quem recorrer' in col.lower():
-            col_info = col
-            break
-    
-    if col_info:
+    col_info = "Eu sei a quem recorrer dentro da faculdade quando tenho dificuldades emocionais."
+    if col_info in df.columns:
         df[col_info] = pd.to_numeric(df[col_info], errors='coerce')
         impacto_info = 10 - df[col_info].mean()
         problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
     
-    col_prec = None
-    for col in df.columns:
-        if 'preconceito' in col.lower():
-            col_prec = col
-            break
-    
-    if col_prec:
+    col_prec = "Sinto que existe um preconceito em procurar apoio psicológico ou pedagógico na instituição."
+    if col_prec in df.columns:
         df[col_prec] = pd.to_numeric(df[col_prec], errors='coerce')
         impacto_prec = df[col_prec].mean()
         problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
@@ -122,8 +103,10 @@ def calcular_priorizacao(df):
         df_problemas['Prioridade'] = df_problemas['Impacto'] / df_problemas['Esforço']
         return df_problemas.sort_values('Prioridade', ascending=False)
     
+    # Fallback padrão
     return pd.DataFrame([{"Problema": "Falta de informação", "Impacto": 7.5, "Esforço": 2, "Prioridade": 3.75}])
 
 def limpar_colunas(df):
+    """Remove apenas colunas claramente desnecessárias"""
     colunas_remover = [col for col in df.columns if 'Carimbo' in col or 'Declaro' in col or 'E-MAIL' in col or 'convidado' in col]
     return df.drop(columns=colunas_remover, errors='ignore')
