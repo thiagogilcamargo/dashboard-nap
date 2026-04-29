@@ -31,39 +31,48 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # === NECESSIDADE DO ALUNO (média de 3 perguntas) ===
-    col_necessidade1 = "Já senti necessidade de apoio emocional durante a graduação."
-    col_necessidade2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
-    col_necessidade3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
+    # Usando os índices exatos das colunas (baseado na sua listagem)
+    # Os índices podem mudar, então vamos usar os nomes exatos
     
-    # === SUPORTE PERCEBIDO (1 pergunta) ===
-    col_suporte = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+    # Necessidade (média de 3 perguntas)
+    col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
+    col_nec2 = "Eu me sentiria confortável em procurar ajuda dentro da instituição."
+    col_nec3 = "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
     
-    # === INTENÇÃO DE USO (3 perguntas) ===
-    col_intencao1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
-    col_intencao2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
-    col_intencao3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
+    # Suporte (1 pergunta)
+    col_sup = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
+    
+    # Intenção (3 perguntas)
+    col_int1 = "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento."
+    col_int2 = "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
+    col_int3 = "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
     
     # Converter para numérico
-    for col in [col_necessidade1, col_necessidade2, col_necessidade3, col_suporte, col_intencao1, col_intencao2, col_intencao3]:
+    for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
     # Calcular Necessidade
-    if col_necessidade1 in df.columns and col_necessidade2 in df.columns and col_necessidade3 in df.columns:
-        df['score_necessidade'] = df[[col_necessidade1, col_necessidade2, col_necessidade3]].mean(axis=1)
+    if col_nec1 in df.columns and col_nec2 in df.columns and col_nec3 in df.columns:
+        df['score_necessidade'] = df[[col_nec1, col_nec2, col_nec3]].mean(axis=1)
+        print(f"✅ Necessidade calculada: média {df['score_necessidade'].mean():.1f}")
+    else:
+        print("❌ Colunas de necessidade não encontradas")
     
     # Calcular Suporte
-    if col_suporte in df.columns:
-        df['score_suporte'] = df[col_suporte]
+    if col_sup in df.columns:
+        df['score_suporte'] = df[col_sup]
+        print(f"✅ Suporte calculado: média {df['score_suporte'].mean():.1f}")
+    else:
+        print("❌ Coluna de suporte não encontrada")
     
-    # Calcular Gap (Necessidade - Suporte)
+    # Calcular Gap
     if 'score_necessidade' in df.columns and 'score_suporte' in df.columns:
         df['score_gap'] = df['score_necessidade'] - df['score_suporte']
     
     # Calcular Intenção
-    if col_intencao1 in df.columns and col_intencao2 in df.columns and col_intencao3 in df.columns:
-        df['score_intencao'] = df[[col_intencao1, col_intencao2, col_intencao3]].mean(axis=1)
+    if col_int1 in df.columns and col_int2 in df.columns and col_int3 in df.columns:
+        df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
     
     return df
 
