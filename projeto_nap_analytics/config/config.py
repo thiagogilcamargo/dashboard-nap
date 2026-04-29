@@ -1,15 +1,11 @@
-# config/config.py
+# dashboard/config.py
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
-PATH_PROCESSED = os.path.join(BASE_DIR, "dados", "processed", "dados_modelados.csv")
-PATH_PROBLEMAS = os.path.join(BASE_DIR, "dados", "processed", "problemas_priorizados.csv")
-PATH_PDF = os.path.join(BASE_DIR, "outputs", "relatorio_nap.pdf")
 
-# NOMES EXATOS DAS COLUNAS (como estão no CSV)
-# Copie exatamente do seu CSV - use o diagnóstico para confirmar
+# Nomes das colunas
 NECESSIDADE_COLS = [
     "Já senti necessidade de apoio emocional durante a graduação.",
     "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
