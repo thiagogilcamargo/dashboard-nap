@@ -5,7 +5,7 @@ import plotly.express as px
 import sys
 import os
 
-# Adiciona a raiz do projeto ao path para importar utils
+# Adiciona a raiz do projeto ao path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils import (
@@ -31,7 +31,7 @@ df = carregar_e_processar()
 df_problemas = pd.DataFrame([{"Problema": "Falta de informação", "Impacto": 7.5, "Esforço": 2, "Prioridade": 3.75}])
 
 # ============================================================
-# SIDEBAR COM FILTROS
+# SIDEBAR
 # ============================================================
 st.sidebar.title("🎛️ Filtros")
 st.sidebar.markdown("---")
@@ -70,7 +70,7 @@ st.sidebar.markdown("---")
 st.sidebar.caption(f"📊 Mostrando **{len(df)}** registros")
 
 # ============================================================
-# DASHBOARD PRINCIPAL
+# DASHBOARD
 # ============================================================
 st.title("🧠 NAP — Núcleo de Apoio Psicopedagógico")
 st.markdown("### Painel de Jornada e Experiência do Aluno")
@@ -99,9 +99,7 @@ col6.metric("🎯 Intenção", f"{intencao:.1f}/10" if intencao > 0 else "N/A")
 col7.metric("👀 Conhecem", f"{pct_conhece:.0f}%")
 col8.metric("❌ Desconhecem", f"{pct_nao:.0f}%")
 
-# ============================================================
-# FUNIL
-# ============================================================
+# Funil
 st.markdown("---")
 st.subheader("📊 Funil de Adoção")
 if 'Jornada' in df.columns:
@@ -110,9 +108,7 @@ if 'Jornada' in df.columns:
     fig = px.bar(funil, x='Status', y='Quantidade', color='Status', text='Quantidade')
     st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# SCORES
-# ============================================================
+# Scores
 st.markdown("---")
 st.subheader("📊 Scores por Dimensão")
 scores_data = []
@@ -128,62 +124,46 @@ if scores_data:
     fig = px.bar(df_scores, x='Dimensão', y='Score', range_y=[0,10], text='Score')
     st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# PRIORIZAÇÃO
-# ============================================================
+# Priorização
 st.markdown("---")
 st.subheader("🎯 Priorização de Problemas")
 if not df_problemas.empty:
     fig = px.bar(df_problemas, x='Problema', y='Prioridade', color='Prioridade', text='Prioridade')
     st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# DISTRIBUIÇÕES
-# ============================================================
+# Demografia
 st.markdown("---")
 st.subheader("📈 Distribuições Demográficas")
 col_a, col_b, col_c = st.columns(3)
 
 with col_a:
     if 'Faixa Etária' in df.columns:
-        idade = df['Faixa Etária'].value_counts().reset_index()
-        idade.columns = ['Faixa Etária', 'Quantidade']
-        fig = px.pie(idade, values='Quantidade', names='Faixa Etária')
+        idade_counts = df['Faixa Etária'].value_counts().reset_index()
+        idade_counts.columns = ['Faixa Etária', 'Quantidade']
+        fig = px.pie(idade_counts, values='Quantidade', names='Faixa Etária')
         st.plotly_chart(fig, use_container_width=True)
 
 with col_b:
     if 'Gênero' in df.columns:
-        genero = df['Gênero'].value_counts().reset_index()
-        genero.columns = ['Gênero', 'Quantidade']
-        fig = px.pie(genero, values='Quantidade', names='Gênero')
+        genero_counts = df['Gênero'].value_counts().reset_index()
+        genero_counts.columns = ['Gênero', 'Quantidade']
+        fig = px.pie(genero_counts, values='Quantidade', names='Gênero')
         st.plotly_chart(fig, use_container_width=True)
 
 with col_c:
     if 'Período' in df.columns:
-        periodo = df['Período'].value_counts().reset_index()
-        periodo.columns = ['Período', 'Quantidade']
-        fig = px.pie(periodo, values='Quantidade', names='Período')
+        periodo_counts = df['Período'].value_counts().reset_index()
+        periodo_counts.columns = ['Período', 'Quantidade']
+        fig = px.pie(periodo_counts, values='Quantidade', names='Período')
         st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# CAMPUS
-# ============================================================
+# Campus
 st.markdown("---")
 if 'Campus' in df.columns:
     st.subheader("🏢 Distribuição por Campus")
-    campus = df['Campus'].value_counts().reset_index()
-    campus.columns = ['Campus', 'Quantidade']
-    fig = px.bar(campus, x='Campus', y='Quantidade', color='Campus', text='Quantidade')
+    campus_counts = df['Campus'].value_counts().reset_index()
+    campus_counts.columns = ['Campus', 'Quantidade']
+    fig = px.bar(campus_counts, x='Campus', y='Quantidade', color='Campus', text='Quantidade')
     st.plotly_chart(fig, use_container_width=True)
 
-# ============================================================
-# INSIGHT
-# ============================================================
-st.markdown("---")
 st.success("✅ Dashboard rodando!")
-
-if not pd.isna(necessidade) and not pd.isna(suporte) and necessidade > 7 and suporte < 5:
-    st.warning(f"⚠️ **Alerta:** Alta necessidade ({necessidade:.1f}) vs baixo suporte ({suporte:.1f})")
-
-if not df_problemas.empty:
-    st.info(f"💡 **Insight:** Priorizar '{df_problemas.iloc[0]['Problema']}'")
