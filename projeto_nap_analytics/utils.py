@@ -7,7 +7,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
 
 def carregar_dados_brutos():
-    df = pd.read_csv(PATH_RAW, encoding='utf-8')
+    # Usando encoding correto
+    df = pd.read_csv(PATH_RAW, encoding='utf-8-sig')
     df = df.replace(r'^\s*$', np.nan, regex=True)
     return df
 
@@ -31,8 +32,11 @@ def aplicar_jornada(df):
     return df
 
 def calcular_scores_dataframe(df):
-    # Usando os índices exatos das colunas (baseado na sua listagem)
-    # Os índices podem mudar, então vamos usar os nomes exatos
+    # DEBUG: Mostrar colunas encontradas (vai aparecer nos logs do Streamlit)
+    print("=== COLUNAS ENCONTRADAS PARA SCORES ===")
+    for col in df.columns:
+        if 'necessidade' in col.lower() or 'suporte' in col.lower() or 'confortável' in col.lower() or 'acredito' in col.lower():
+            print(f"  - {col}")
     
     # Necessidade (média de 3 perguntas)
     col_nec1 = "Já senti necessidade de apoio emocional durante a graduação."
@@ -51,6 +55,9 @@ def calcular_scores_dataframe(df):
     for col in [col_nec1, col_nec2, col_nec3, col_sup, col_int1, col_int2, col_int3]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
+            print(f"✅ Coluna encontrada: {col[:50]}...")
+        else:
+            print(f"❌ Coluna NÃO encontrada: {col[:50]}...")
     
     # Calcular Necessidade
     if col_nec1 in df.columns and col_nec2 in df.columns and col_nec3 in df.columns:
@@ -69,10 +76,12 @@ def calcular_scores_dataframe(df):
     # Calcular Gap
     if 'score_necessidade' in df.columns and 'score_suporte' in df.columns:
         df['score_gap'] = df['score_necessidade'] - df['score_suporte']
+        print(f"✅ Gap calculado: média {df['score_gap'].mean():.1f}")
     
     # Calcular Intenção
     if col_int1 in df.columns and col_int2 in df.columns and col_int3 in df.columns:
         df['score_intencao'] = df[[col_int1, col_int2, col_int3]].mean(axis=1)
+        print(f"✅ Intenção calculada: média {df['score_intencao'].mean():.1f}")
     
     return df
 
