@@ -71,8 +71,7 @@ def calcular_scores(df):
     df["score_intencao"] = df[cols_intencao].mean(axis=1)
     df["score_gap"] = df["score_necessidade"] - df["score_suporte"]
     
-    # Debug
-    st.info(f"📊 Suporte: média {df['score_suporte'].mean():.1f}/10" if col_suporte in df.columns and df['score_suporte'].notna().any() else "⚠️ Suporte não encontrado")
+    
     
     return df
 
