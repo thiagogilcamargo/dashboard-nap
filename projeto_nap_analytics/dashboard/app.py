@@ -216,7 +216,7 @@ with col_a2:
         st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
-# HEATMAP COM LEGENDA (COM MÁSCARA NO TRIÂNGULO SUPERIOR)
+# HEATMAP COM LEGENDA - VERSÃO CORRIGIDA
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Matriz de Correlação")
@@ -243,56 +243,60 @@ nomes_curtos = {
 cols_existentes = [col for col in cols_correlacao if col in df.columns]
 
 if len(cols_existentes) >= 2:
-    corr_matrix = df[cols_existentes].corr()
-    corr_matrix = corr_matrix.rename(index=nomes_curtos, columns=nomes_curtos)
+    # ==================================================
+    # SOLUÇÃO: Criar um DataFrame limpo para correlação
+    # ==================================================
+    df_clean = df[cols_existentes].copy()
     
-    # Máscara para mostrar apenas o triângulo inferior
-    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-    corr_matrix_masked = corr_matrix.mask(mask)
+    # Converter para numérico
+    for col in cols_existentes:
+        df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
     
-    fig_corr = px.imshow(
-        corr_matrix_masked, 
-        text_auto='.2f', 
-        aspect='auto', 
-        color_continuous_scale='RdBu_r', 
-        zmin=-1, 
-        zmax=1
-    )
-    fig_corr.update_layout(height=500)
-    st.plotly_chart(fig_corr, use_container_width=True)
+    # REMOVER LINHAS COM QUALQUER VALOR NULO
+    # Isso garante que a correlação seja calculada com as mesmas linhas para todas as colunas
+    df_clean = df_clean.dropna()
     
-    with st.expander("📖 Como interpretar este gráfico"):
-        st.markdown("""
-        - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas. Ex: quem sente necessidade também tende a ter intenção de usar.
-        - **Azul forte (< -0.7)**: Relação inversa. Ex: quem tem muito preconceito pode ter menos intenção (se aplicável).
-        - **Próximo de zero**: Sem relação significativa.
-        - **Valores em branco**: Triângulo superior omitido para evitar repetição (matriz é simétrica).
-        """)
-
-# ============================================================
-# DEBUG DA MATRIZ - REMOVER DEPOIS
-# ============================================================
-with st.expander("🔧 DEBUG - Verificar dados da correlação"):
-    st.write("**Colunas encontradas para correlação:**")
-    cols_correlacao = [
-        "Já senti necessidade de apoio emocional durante a graduação.",
-        "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
-        "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
-        "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.",
-        "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
-        "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
-    ]
+    # Mostrar quantas linhas foram usadas
+    st.caption(f"📊 Base para correlação: {len(df_clean)} respostas completas (de {len(df)} total)")
     
-    for col in cols_correlacao:
-        if col in df.columns:
-            st.write(f"✅ `{col}` - {df[col].dtype} - {df[col].notna().sum()} valores válidos")
-        else:
-            st.write(f"❌ `{col}` - NÃO ENCONTRADA")
-    
-    st.write("**Matriz de correlação calculada:**")
-    if len([col for col in cols_correlacao if col in df.columns]) >= 2:
-        corr_test = df[[col for col in cols_correlacao if col in df.columns]].corr()
-        st.dataframe(corr_test)
+    if len(df_clean) >= 3:
+        # Calcular correlação
+        corr_matrix = df_clean.corr()
+        
+        # Renomear
+        corr_matrix = corr_matrix.rename(index=nomes_curtos, columns=nomes_curtos)
+        
+        # Máscara para mostrar apenas o triângulo inferior
+        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+        corr_matrix_masked = corr_matrix.mask(mask)
+        
+        # Plotar heatmap
+        fig_corr = px.imshow(
+            corr_matrix_masked, 
+            text_auto='.2f', 
+            aspect='auto', 
+            color_continuous_scale='RdBu_r', 
+            zmin=-1, 
+            zmax=1
+        )
+        fig_corr.update_layout(height=500)
+        st.plotly_chart(fig_corr, use_container_width=True)
+        
+        with st.expander("📖 Como interpretar este gráfico"):
+            st.markdown("""
+            - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas. Ex: quem sente necessidade também tende a ter intenção de usar.
+            - **Azul forte (< -0.7)**: Relação inversa. Ex: quem tem muito preconceito pode ter menos intenção (se aplicável).
+            - **Próximo de zero**: Sem relação significativa.
+            - **Valores em branco**: Triângulo superior omitido para evitar repetição (matriz é simétrica).
+            """)
+        
+        # Debug para mostrar a matriz completa
+        with st.expander("🔧 Ver matriz completa (valores numéricos)"):
+            st.dataframe(corr_matrix.style.format("{:.3f}"))
+    else:
+        st.warning(f"Dados insuficientes: apenas {len(df_clean)} respostas completas. A correlação precisa de no mínimo 3 respostas.")
+else:
+    st.warning(f"Colunas insuficientes: encontradas {len(cols_existentes)} de 6 necessárias")
 
 # ============================================================
 # COMPARAÇÃO CAMPI COM LEGENDA
