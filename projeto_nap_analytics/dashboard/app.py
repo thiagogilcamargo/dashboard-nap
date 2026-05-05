@@ -33,7 +33,7 @@ df = carregar_e_processar()
 # ============================================================
 # FUNÇÃO PARA GERAR HTML (RELATÓRIO)
 # ============================================================
-def gerar_html_relatorio():
+def gerar_html_relatorio(df):
     necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
     suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
     gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
@@ -120,11 +120,20 @@ if 'Jornada' in df.columns:
 
 st.sidebar.markdown("---")
 
-# Exportar
-html_report = gerar_html_relatorio()
+# Exportar Relatório HTML
+html_report = gerar_html_relatorio(df)
 b64 = base64.b64encode(html_report.encode()).decode()
 href = f'<a href="data:text/html;base64,{b64}" download="relatorio_nap.html" style="text-decoration: none;"><button style="background-color: #e74c3c; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">📄 Relatório</button></a>'
 st.sidebar.markdown(href, unsafe_allow_html=True)
+
+# Exportar CSV
+csv = df.to_csv(index=False).encode('utf-8')
+st.sidebar.download_button(
+    label="📥 Baixar dados (CSV)",
+    data=csv,
+    file_name=f"nap_dados_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+    mime="text/csv",
+)
 
 st.sidebar.caption(f"📊 {len(df)} registros")
 
@@ -180,17 +189,21 @@ col_a1, col_a2 = st.columns(2)
 with col_a1:
     if gap > 3:
         st.error(f"🔴 **Gap Crítico:** {gap:.1f} pontos entre necessidade e suporte")
+    elif gap < -1:
+        st.success(f"🟢 **Gap positivo:** Suporte excede necessidade em {abs(gap):.1f} pontos")
     else:
-        st.success(f"🟢 Gap controlado: {gap:.1f} pontos")
+        st.info(f"🟡 Gap controlado: {gap:.1f} pontos")
 
 with col_a2:
     if pct_nao > 40:
         st.error(f"🔴 **Comunicação:** {pct_nao:.0f}% desconhecem o NAP")
+    elif pct_nao > 20:
+        st.warning(f"🟡 **Atenção:** {pct_nao:.0f}% desconhecem o NAP")
     else:
         st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
-# HEATMAP COM LEGENDA
+# HEATMAP COM LEGENDA (COM MÁSCARA NO TRIÂNGULO SUPERIOR)
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Matriz de Correlação")
@@ -219,7 +232,19 @@ cols_existentes = [col for col in cols_correlacao if col in df.columns]
 if len(cols_existentes) >= 2:
     corr_matrix = df[cols_existentes].corr()
     corr_matrix = corr_matrix.rename(index=nomes_curtos, columns=nomes_curtos)
-    fig_corr = px.imshow(corr_matrix, text_auto='.2f', aspect='auto', color_continuous_scale='RdBu_r', zmin=-1, zmax=1)
+    
+    # Máscara para mostrar apenas o triângulo inferior
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+    corr_matrix_masked = corr_matrix.mask(mask)
+    
+    fig_corr = px.imshow(
+        corr_matrix_masked, 
+        text_auto='.2f', 
+        aspect='auto', 
+        color_continuous_scale='RdBu_r', 
+        zmin=-1, 
+        zmax=1
+    )
     fig_corr.update_layout(height=500)
     st.plotly_chart(fig_corr, use_container_width=True)
     
@@ -228,6 +253,7 @@ if len(cols_existentes) >= 2:
         - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas. Ex: quem sente necessidade também tende a ter intenção de usar.
         - **Azul forte (< -0.7)**: Relação inversa. Ex: quem tem muito preconceito pode ter menos intenção (se aplicável).
         - **Próximo de zero**: Sem relação significativa.
+        - **Valores em branco**: Triângulo superior omitido para evitar repetição (matriz é simétrica).
         """)
 
 # ============================================================
@@ -265,12 +291,13 @@ if 'Campus' in df.columns and len(df['Campus'].unique()) > 1:
 # ============================================================
 st.markdown("---")
 st.subheader("⭐ Análise da Qualidade do Serviço (Quem usou o NAP)")
-st.caption("🔍 **Atenção:** Baseado em apenas 2 alunos que utilizaram o NAP. Os dados são indicativos, não estatisticamente conclusivos.")
 
 # Filtrar quem usou o NAP
 df_usou = df[df['Jornada'] == 'Usou NAP']
 
-if len(df_usou) >= 2:
+if len(df_usou) >= 5:
+    st.caption("🔍 **Base:** Alunos que utilizaram o NAP")
+    
     # 1. Avaliação média
     st.markdown("### 📊 Avaliação dos Usuários")
     
@@ -291,8 +318,8 @@ if len(df_usou) >= 2:
             nota = df_usou['Confio no profissionalismo do atendimento oferecido pelo NAP.'].mean()
             st.metric("🔒 Confiança no profissionalismo", f"{nota:.1f}/10")
     
-    # 2. Gráfico de radar para os poucos usuários
-    st.markdown("### 📈 Perfil de satisfação (amostra pequena)")
+    # 2. Gráfico de radar
+    st.markdown("### 📈 Perfil de Satisfação")
     
     perguntas_qualidade = [
         "O atendimento do NAP atendeu às minhas expectativas.",
@@ -305,7 +332,6 @@ if len(df_usou) >= 2:
     perguntas_existentes = [p for p in perguntas_qualidade if p in df_usou.columns]
     
     if perguntas_existentes:
-        # Média das respostas
         medias = [df_usou[p].mean() for p in perguntas_existentes]
         nomes_curtos_q = [
             "Atendeu expectativas",
@@ -330,14 +356,26 @@ if len(df_usou) >= 2:
         )
         st.plotly_chart(fig_radar, use_container_width=True)
         
-        st.info("💡 **Interpretação:** Mesmo com poucos usuários, as notas são positivas. Isso sugere que quem usa o NAP aprova o serviço. O desafio é aumentar a adesão.")
+        st.info("💡 **Interpretação:** Usuários aprovam o serviço. O desafio é aumentar a adesão e coletar mais depoimentos.")
     
-    # 3. Depoimentos (se houver coluna de texto)
+    # 3. Depoimentos
     st.markdown("### 💬 Depoimentos dos usuários")
-    st.info("📝 Os usuários do NAP relataram experiências positivas. Invista em coletar e divulgar esses depoimentos para incentivar novos usuários.")
+    st.info("📝 Invista em coletar e divulgar depoimentos de alunos que usaram o NAP para incentivar novos usuários.")
+
+elif len(df_usou) >= 2:
+    st.warning(f"📊 Amostra pequena ({len(df_usou)} usuários). Os dados abaixo são apenas indicativos.")
     
+    # Mostra apenas métricas básicas, sem radar
+    if 'O atendimento do NAP atendeu às minhas expectativas.' in df_usou.columns:
+        nota = df_usou['O atendimento do NAP atendeu às minhas expectativas.'].mean()
+        st.metric("🎯 Atendeu expectativas (amostra pequena)", f"{nota:.1f}/10")
+    
+    if 'Eu recomendaria o NAP para outros estudantes.' in df_usou.columns:
+        nota = df_usou['Eu recomendaria o NAP para outros estudantes.'].mean()
+        st.metric("👍 Recomendaria (amostra pequena)", f"{nota:.1f}/10")
+
 else:
-    st.info("📊 Dados insuficientes para análise detalhada da qualidade do serviço (apenas 2 usuários). Recomenda-se aumentar a amostra para análises mais robustas.")
+    st.info("📊 Poucos dados para análise da qualidade do serviço. Aumente a amostra para análises robustas.")
     st.markdown("""
     **Sugestões para melhorar:**
     - Incentivar mais alunos a usar o NAP
@@ -359,6 +397,7 @@ if 'Semestre' in df.columns:
         'score_suporte': 'mean',
         'score_intencao': 'mean'
     }).reset_index().dropna()
+    evolucao = evolucao.sort_values('Semestre_Num')  # Garante ordenação correta
     
     if len(evolucao) >= 2:
         fig_evo = go.Figure()
@@ -380,6 +419,8 @@ if 'Semestre' in df.columns:
         ultimo_sup = evolucao.iloc[-1]['score_suporte']
         if ultimo_sup < primeiro_sup:
             st.warning(f"📉 O suporte percebido caiu {primeiro_sup - ultimo_sup:.1f} pontos ao longo dos semestres")
+    else:
+        st.info("Dados insuficientes para análise de evolução por semestre")
 
 # ============================================================
 # SCORES POR DIMENSÃO
@@ -407,6 +448,7 @@ if scores_data:
         - **Necessidade alta (> 7)**: Alunos reconhecem que precisam de apoio
         - **Suporte baixo (< 5)**: Alunos não percebem que a faculdade oferece apoio
         - **Gap (diferença)**: Quanto maior, pior. Indica desalinhamento entre necessidade e oferta
+        - **Gap negativo**: Suporte excede a necessidade (situação ideal)
         """)
 
 # ============================================================
@@ -427,7 +469,7 @@ for col in df.columns:
 if col_info:
     dados = pd.to_numeric(df[col_info], errors='coerce').dropna()
     if len(dados) > 0:
-        impacto_info = 10 - dados.mean()
+        impacto_info = 10 - dados.mean()  # Quanto menos sabe, maior o impacto
         problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
 
 col_prec = None
@@ -439,7 +481,7 @@ for col in df.columns:
 if col_prec:
     dados = pd.to_numeric(df[col_prec], errors='coerce').dropna()
     if len(dados) > 0:
-        impacto_prec = dados.mean()
+        impacto_prec = dados.mean()  # Quanto mais preconceito, maior o impacto
         problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
 
 if gap > 3:
@@ -458,6 +500,7 @@ if problemas:
         - **Prioridade mais alta** = maior relação Impacto/Esforço
         - **Falta de informação** tem alto impacto e baixo esforço → PRIORIDADE MÁXIMA
         - **Preconceito** tem esforço alto (mudança cultural demora)
+        - **Gap** é um problema estrutural que exige ação coordenada
         """)
 
 # ============================================================
@@ -470,6 +513,12 @@ st.caption("🔍 **O que mostra?** Quantos alunos estão em cada etapa: desconhe
 if 'Jornada' in df.columns:
     funil = df['Jornada'].value_counts().reset_index()
     funil.columns = ['Status', 'Quantidade']
+    
+    # Ordem lógica do funil
+    ordem = ['Não conhece NAP', 'Conhece mas não usou', 'Usou NAP']
+    funil['Status'] = pd.Categorical(funil['Status'], categories=ordem, ordered=True)
+    funil = funil.sort_values('Status')
+    
     fig = px.bar(funil, x='Status', y='Quantidade', color='Status', text='Quantidade')
     st.plotly_chart(fig, use_container_width=True)
     
@@ -481,7 +530,7 @@ if 'Jornada' in df.columns:
         """)
 
 # ============================================================
-# DISTRIBUIÇÕES
+# DISTRIBUIÇÕES DEMOGRÁFICAS
 # ============================================================
 st.markdown("---")
 st.subheader("📈 Distribuições Demográficas")
@@ -493,25 +542,25 @@ with col_d1:
     if 'Faixa Etária' in df.columns:
         idade = df['Faixa Etária'].value_counts().reset_index()
         idade.columns = ['Faixa Etária', 'Quantidade']
-        fig = px.pie(idade, values='Quantidade', names='Faixa Etária')
+        fig = px.pie(idade, values='Quantidade', names='Faixa Etária', title="Faixa Etária")
         st.plotly_chart(fig, use_container_width=True)
 
 with col_d2:
     if 'Gênero' in df.columns:
         genero = df['Gênero'].value_counts().reset_index()
         genero.columns = ['Gênero', 'Quantidade']
-        fig = px.pie(genero, values='Quantidade', names='Gênero')
+        fig = px.pie(genero, values='Quantidade', names='Gênero', title="Gênero")
         st.plotly_chart(fig, use_container_width=True)
 
 with col_d3:
     if 'Período' in df.columns:
         periodo = df['Período'].value_counts().reset_index()
         periodo.columns = ['Período', 'Quantidade']
-        fig = px.pie(periodo, values='Quantidade', names='Período')
+        fig = px.pie(periodo, values='Quantidade', names='Período', title="Período")
         st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
-# CAMPUS
+# DISTRIBUIÇÃO POR CAMPUS
 # ============================================================
 st.markdown("---")
 if 'Campus' in df.columns:
@@ -523,7 +572,7 @@ if 'Campus' in df.columns:
     st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
-# FOOTER
+# FOOTER E RESUMO EXECUTIVO
 # ============================================================
 st.markdown("---")
 st.success("✅ Dashboard completo com legendas explicativas!")
@@ -534,8 +583,8 @@ with st.expander("📋 Resumo Executivo para Gestão"):
     ### Principais conclusões:
     
     1. **Comunicação é a prioridade máxima:** {pct_nao:.0f}% dos alunos desconhecem o NAP.
-    2. **Gap crítico de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas não percebem que a faculdade oferece ({suporte:.1f}/10).
-    3. **Quem usa, aprova:** Mesmo com poucos usuários, as avaliações são positivas.
+    2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas não percebem que a faculdade oferece ({suporte:.1f}/10).
+    3. **Quem usa, aprova:** As avaliações dos usuários são positivas.
     
     ### Recomendações:
     
