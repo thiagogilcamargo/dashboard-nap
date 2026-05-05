@@ -216,11 +216,11 @@ with col_a2:
         st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
-# HEATMAP COM LEGENDA - VERSÃO CORRIGIDA
+# HEATMAP COM LEGENDA - CORRELAÇÃO POR PARES
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Matriz de Correlação")
-st.caption("🔍 **O que significa?** Valores próximos a 1 (vermelho) indicam que as perguntas tendem a subir juntas. Valores próximos a -1 (azul) indicam relação inversa. Quanto mais forte a cor, mais forte a relação.")
+st.caption("🔍 **O que significa?** Valores próximos a 1 (vermelho) indicam que as perguntas tendem a subir juntas. Valores próximos a -1 (azul) indicam relação inversa.")
 
 cols_correlacao = [
     "Já senti necessidade de apoio emocional durante a graduação.",
@@ -240,61 +240,71 @@ nomes_curtos = {
     "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).": "Confiança"
 }
 
+# Verificar quais colunas existem
 cols_existentes = [col for col in cols_correlacao if col in df.columns]
 
 if len(cols_existentes) >= 2:
-    # ==================================================
-    # SOLUÇÃO: Criar um DataFrame limpo para correlação
-    # ==================================================
-    df_clean = df[cols_existentes].copy()
+    # Criar matriz de correlação vazia
+    corr_matrix = pd.DataFrame(index=nomes_curtos.values(), columns=nomes_curtos.values(), dtype=float)
     
-    # Converter para numérico
-    for col in cols_existentes:
-        df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+    # Calcular correlação para cada par de colunas (usando apenas pares não nulos)
+    for i, col1 in enumerate(cols_existentes):
+        for j, col2 in enumerate(cols_existentes):
+            if i <= j:  # Só calcular metade (depois espelha)
+                # Pegar apenas linhas onde AMBAS as colunas têm valores válidos
+                df_pair = df[[col1, col2]].dropna()
+                if len(df_pair) >= 3:
+                    corr_value = df_pair[col1].corr(df_pair[col2])
+                    nome1 = nomes_curtos[col1]
+                    nome2 = nomes_curtos[col2]
+                    corr_matrix.loc[nome1, nome2] = corr_value
+                    corr_matrix.loc[nome2, nome1] = corr_value  # Espelha
     
-    # REMOVER LINHAS COM QUALQUER VALOR NULO
-    # Isso garante que a correlação seja calculada com as mesmas linhas para todas as colunas
-    df_clean = df_clean.dropna()
+    # Preencher diagonal com 1
+    for nome in nomes_curtos.values():
+        if nome in corr_matrix.index:
+            corr_matrix.loc[nome, nome] = 1.0
     
-    # Mostrar quantas linhas foram usadas
-    st.caption(f"📊 Base para correlação: {len(df_clean)} respostas completas (de {len(df)} total)")
+    # Mostrar info sobre pares
+    st.caption(f"📊 Correlações calculadas usando pares de respostas válidas (sem exigir todas as 6 perguntas)")
     
-    if len(df_clean) >= 3:
-        # Calcular correlação
-        corr_matrix = df_clean.corr()
+    # Máscara para mostrar apenas o triângulo inferior
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+    corr_matrix_masked = corr_matrix.mask(mask)
+    
+    # Plotar heatmap
+    fig_corr = px.imshow(
+        corr_matrix_masked, 
+        text_auto='.2f', 
+        aspect='auto', 
+        color_continuous_scale='RdBu_r', 
+        zmin=-1, 
+        zmax=1
+    )
+    fig_corr.update_layout(height=500)
+    st.plotly_chart(fig_corr, use_container_width=True)
+    
+    # Debug: mostrar quantos pares foram calculados
+    with st.expander("🔧 Ver detalhes das correlações"):
+        st.write("**Número de pares válidos por correlação:**")
+        for i, col1 in enumerate(cols_existentes):
+            for j, col2 in enumerate(cols_existentes):
+                if i < j:
+                    df_pair = df[[col1, col2]].dropna()
+                    nome1 = nomes_curtos[col1]
+                    nome2 = nomes_curtos[col2]
+                    st.write(f"{nome1} x {nome2}: {len(df_pair)} respostas")
         
-        # Renomear
-        corr_matrix = corr_matrix.rename(index=nomes_curtos, columns=nomes_curtos)
-        
-        # Máscara para mostrar apenas o triângulo inferior
-        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-        corr_matrix_masked = corr_matrix.mask(mask)
-        
-        # Plotar heatmap
-        fig_corr = px.imshow(
-            corr_matrix_masked, 
-            text_auto='.2f', 
-            aspect='auto', 
-            color_continuous_scale='RdBu_r', 
-            zmin=-1, 
-            zmax=1
-        )
-        fig_corr.update_layout(height=500)
-        st.plotly_chart(fig_corr, use_container_width=True)
-        
-        with st.expander("📖 Como interpretar este gráfico"):
-            st.markdown("""
-            - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas. Ex: quem sente necessidade também tende a ter intenção de usar.
-            - **Azul forte (< -0.7)**: Relação inversa. Ex: quem tem muito preconceito pode ter menos intenção (se aplicável).
-            - **Próximo de zero**: Sem relação significativa.
-            - **Valores em branco**: Triângulo superior omitido para evitar repetição (matriz é simétrica).
-            """)
-        
-        # Debug para mostrar a matriz completa
-        with st.expander("🔧 Ver matriz completa (valores numéricos)"):
-            st.dataframe(corr_matrix.style.format("{:.3f}"))
-    else:
-        st.warning(f"Dados insuficientes: apenas {len(df_clean)} respostas completas. A correlação precisa de no mínimo 3 respostas.")
+        st.write("**Matriz completa:**")
+        st.dataframe(corr_matrix.style.format("{:.3f}").background_gradient(cmap='RdBu_r', vmin=-1, vmax=1))
+    
+    with st.expander("📖 Como interpretar este gráfico"):
+        st.markdown("""
+        - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas.
+        - **Azul forte (< -0.7)**: Relação inversa forte.
+        - **Próximo de zero**: Sem relação significativa.
+        - **Valores em branco**: Triângulo superior omitido para evitar repetição.
+        """)
 else:
     st.warning(f"Colunas insuficientes: encontradas {len(cols_existentes)} de 6 necessárias")
 
