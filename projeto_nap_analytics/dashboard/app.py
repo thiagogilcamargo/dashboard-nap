@@ -216,7 +216,7 @@ with col_a2:
         st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
-# HEATMAP COM LEGENDA - CORRELAÇÃO POR PARES
+# HEATMAP COM LEGENDA - CORRELAÇÃO POR PARES (COM TRATAMENTO DE ERRO)
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Matriz de Correlação")
@@ -245,28 +245,46 @@ cols_existentes = [col for col in cols_correlacao if col in df.columns]
 
 if len(cols_existentes) >= 2:
     # Criar matriz de correlação vazia
-    corr_matrix = pd.DataFrame(index=nomes_curtos.values(), columns=nomes_curtos.values(), dtype=float)
+    labels = [nomes_curtos[col] for col in cols_existentes]
+    corr_matrix = pd.DataFrame(index=labels, columns=labels, dtype=float)
     
     # Calcular correlação para cada par de colunas (usando apenas pares não nulos)
     for i, col1 in enumerate(cols_existentes):
         for j, col2 in enumerate(cols_existentes):
             if i <= j:  # Só calcular metade (depois espelha)
+                nome1 = nomes_curtos[col1]
+                nome2 = nomes_curtos[col2]
+                
                 # Pegar apenas linhas onde AMBAS as colunas têm valores válidos
                 df_pair = df[[col1, col2]].dropna()
+                
                 if len(df_pair) >= 3:
-                    corr_value = df_pair[col1].corr(df_pair[col2])
-                    nome1 = nomes_curtos[col1]
-                    nome2 = nomes_curtos[col2]
-                    corr_matrix.loc[nome1, nome2] = corr_value
-                    corr_matrix.loc[nome2, nome1] = corr_value  # Espelha
+                    try:
+                        corr_value = df_pair[col1].corr(df_pair[col2])
+                        
+                        # Verificar se o valor é válido (não é NaN)
+                        if pd.notna(corr_value):
+                            corr_matrix.loc[nome1, nome2] = corr_value
+                            corr_matrix.loc[nome2, nome1] = corr_value  # Espelha
+                        else:
+                            # Se correlação for NaN (ex: todos os valores iguais), colocar 0
+                            corr_matrix.loc[nome1, nome2] = 0
+                            corr_matrix.loc[nome2, nome1] = 0
+                    except:
+                        # Em caso de erro, colocar 0
+                        corr_matrix.loc[nome1, nome2] = 0
+                        corr_matrix.loc[nome2, nome1] = 0
+                else:
+                    # Dados insuficientes
+                    corr_matrix.loc[nome1, nome2] = 0
+                    corr_matrix.loc[nome2, nome1] = 0
     
     # Preencher diagonal com 1
-    for nome in nomes_curtos.values():
-        if nome in corr_matrix.index:
-            corr_matrix.loc[nome, nome] = 1.0
+    for nome in labels:
+        corr_matrix.loc[nome, nome] = 1.0
     
     # Mostrar info sobre pares
-    st.caption(f"📊 Correlações calculadas usando pares de respostas válidas (sem exigir todas as 6 perguntas)")
+    st.caption(f"📊 Correlações calculadas usando pares de respostas válidas")
     
     # Máscara para mostrar apenas o triângulo inferior
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
@@ -296,14 +314,14 @@ if len(cols_existentes) >= 2:
                     st.write(f"{nome1} x {nome2}: {len(df_pair)} respostas")
         
         st.write("**Matriz completa:**")
-        st.dataframe(corr_matrix.style.format("{:.3f}").background_gradient(cmap='RdBu_r', vmin=-1, vmax=1))
+        st.dataframe(corr_matrix.style.format("{:.3f}"))
     
     with st.expander("📖 Como interpretar este gráfico"):
         st.markdown("""
-        - **Vermelho forte (> 0.7)**: Perguntas fortemente relacionadas.
-        - **Azul forte (< -0.7)**: Relação inversa forte.
+        - **Vermelho (> 0.5)**: Perguntas positivamente relacionadas.
+        - **Azul (< -0.5)**: Relação inversa.
         - **Próximo de zero**: Sem relação significativa.
-        - **Valores em branco**: Triângulo superior omitido para evitar repetição.
+        - **Valores em branco**: Triângulo superior omitido.
         """)
 else:
     st.warning(f"Colunas insuficientes: encontradas {len(cols_existentes)} de 6 necessárias")
