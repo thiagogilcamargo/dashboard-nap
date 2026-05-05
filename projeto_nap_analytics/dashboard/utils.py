@@ -1,7 +1,6 @@
 # dashboard/utils.py
 import pandas as pd
 import numpy as np
-import os
 import streamlit as st
 
 # IMPORTAR DO CONFIG
@@ -44,18 +43,34 @@ def aplicar_jornada(df):
     return df
 
 # ============================================================
-# SCORES
+# SCORES (VERSÃO CORRIGIDA)
 # ============================================================
 def calcular_scores(df):
-    # Converter para numérico
-    for col in NECESSIDADE_COLS + SUPORTE_COLS + INTENCAO_COLS:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    # Verificar quais colunas realmente existem
+    cols_necessidade_exist = [col for col in NECESSIDADE_COLS if col in df.columns]
+    cols_suporte_exist = [col for col in SUPORTE_COLS if col in df.columns]
+    cols_intencao_exist = [col for col in INTENCAO_COLS if col in df.columns]
+    
+    # Converter para numérico apenas as que existem
+    for col in cols_necessidade_exist + cols_suporte_exist + cols_intencao_exist:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
     
     # Calcular scores
-    df["score_necessidade"] = df[NECESSIDADE_COLS].mean(axis=1)
-    df["score_suporte"] = df[SUPORTE_COLS].mean(axis=1) if SUPORTE_COLS else np.nan
-    df["score_intencao"] = df[INTENCAO_COLS].mean(axis=1)
+    if cols_necessidade_exist:
+        df["score_necessidade"] = df[cols_necessidade_exist].mean(axis=1)
+    else:
+        df["score_necessidade"] = np.nan
+    
+    if cols_suporte_exist:
+        df["score_suporte"] = df[cols_suporte_exist].mean(axis=1)
+    else:
+        df["score_suporte"] = np.nan
+    
+    if cols_intencao_exist:
+        df["score_intencao"] = df[cols_intencao_exist].mean(axis=1)
+    else:
+        df["score_intencao"] = np.nan
+    
     df["score_gap"] = df["score_necessidade"] - df["score_suporte"]
     
     return df
