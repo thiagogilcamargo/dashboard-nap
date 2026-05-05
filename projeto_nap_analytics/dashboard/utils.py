@@ -4,10 +4,14 @@ import numpy as np
 import os
 import streamlit as st
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PATH_RAW = os.path.join(BASE_DIR, "dados", "raw", "dados.csv")
-
-JORNADA_COL = "Quais da opções abaixo melhor representa você em relação ao NAP (Núcleo de Apoio Psicopedagógico)?"
+# IMPORTAR DO CONFIG
+from dashboard.config import (
+    PATH_RAW,
+    JORNADA_COL,
+    NECESSIDADE_COLS,
+    SUPORTE_COLS,
+    INTENCAO_COLS
+)
 
 # ============================================================
 # LOAD
@@ -43,35 +47,16 @@ def aplicar_jornada(df):
 # SCORES
 # ============================================================
 def calcular_scores(df):
-    # Necessidade (3 perguntas - SEM a pergunta de suporte)
-    cols_necessidade = [
-        "Já senti necessidade de apoio emocional durante a graduação.",
-        "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
-        "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
-    ]
-    
-    # Suporte (1 pergunta separada)
-    col_suporte = "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."
-    
-    # Intenção
-    cols_intencao = [
-        "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
-        "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).",
-        "Eu sei como acessar os serviços oferecidos pelo NAP  (Núcleo de Apoio Psicopedagógico)."
-    ]
-    
     # Converter para numérico
-    for col in cols_necessidade + [col_suporte] + cols_intencao:
+    for col in NECESSIDADE_COLS + SUPORTE_COLS + INTENCAO_COLS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     
     # Calcular scores
-    df["score_necessidade"] = df[cols_necessidade].mean(axis=1)
-    df["score_suporte"] = df[col_suporte] if col_suporte in df.columns else np.nan
-    df["score_intencao"] = df[cols_intencao].mean(axis=1)
+    df["score_necessidade"] = df[NECESSIDADE_COLS].mean(axis=1)
+    df["score_suporte"] = df[SUPORTE_COLS].mean(axis=1) if SUPORTE_COLS else np.nan
+    df["score_intencao"] = df[INTENCAO_COLS].mean(axis=1)
     df["score_gap"] = df["score_necessidade"] - df["score_suporte"]
-    
-    
     
     return df
 
