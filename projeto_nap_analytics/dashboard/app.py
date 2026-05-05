@@ -270,6 +270,31 @@ if len(cols_existentes) >= 2:
         """)
 
 # ============================================================
+# DEBUG DA MATRIZ - REMOVER DEPOIS
+# ============================================================
+with st.expander("🔧 DEBUG - Verificar dados da correlação"):
+    st.write("**Colunas encontradas para correlação:**")
+    cols_correlacao = [
+        "Já senti necessidade de apoio emocional durante a graduação.",
+        "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
+        "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
+        "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.",
+        "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
+        "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
+    ]
+    
+    for col in cols_correlacao:
+        if col in df.columns:
+            st.write(f"✅ `{col}` - {df[col].dtype} - {df[col].notna().sum()} valores válidos")
+        else:
+            st.write(f"❌ `{col}` - NÃO ENCONTRADA")
+    
+    st.write("**Matriz de correlação calculada:**")
+    if len([col for col in cols_correlacao if col in df.columns]) >= 2:
+        corr_test = df[[col for col in cols_correlacao if col in df.columns]].corr()
+        st.dataframe(corr_test)
+
+# ============================================================
 # COMPARAÇÃO CAMPI COM LEGENDA
 # ============================================================
 st.markdown("---")
