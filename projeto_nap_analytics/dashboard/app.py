@@ -31,17 +31,7 @@ def carregar_e_processar():
 df = carregar_e_processar()
 # Depois de df = carregar_e_processar(), adicione:
 
-# ============================================================
-# DEBUG - MOSTRAR COLUNAS REAIS (REMOVER DEPOIS)
-# ============================================================
-with st.expander("🔧 DEBUG - Colunas encontradas no CSV"):
-    st.write("**Colunas relacionadas ao NAP:**")
-    for col in df.columns:
-        if any(word in col.lower() for word in ['nap', 'emocional', 'confort', 'suporte', 'crença', 'acredito', 'confiança', 'confidencial', 'acessar']):
-            st.write(f"- `{col}`")
-    
-    st.write("**Primeiras 5 linhas de dados:**")
-    st.dataframe(df.head())
+
 
 # ============================================================
 # FUNÇÃO PARA GERAR HTML (RELATÓRIO)
@@ -216,115 +206,117 @@ with col_a2:
         st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
-# HEATMAP COM LEGENDA - CORRELAÇÃO POR PARES (COM TRATAMENTO DE ERRO)
+# MATRIZ DE CORRELAÇÃO - DIVIDIDA POR BLOCOS
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Matriz de Correlação")
 st.caption("🔍 **O que significa?** Valores próximos a 1 (vermelho) indicam que as perguntas tendem a subir juntas. Valores próximos a -1 (azul) indicam relação inversa.")
 
-cols_correlacao = [
+# Bloco 1: Percepção de necessidade e suporte
+bloco1_cols = [
     "Já senti necessidade de apoio emocional durante a graduação.",
     "Eu me sentiria confortável em procurar ajuda dentro da instituição.",
     "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
-    "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.",
+    "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."
+]
+
+# Bloco 2: Intenção e confiança no NAP
+bloco2_cols = [
     "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.",
     "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico)."
 ]
 
-nomes_curtos = {
+nomes_curtos_bloco1 = {
     "Já senti necessidade de apoio emocional durante a graduação.": "Necessidade",
     "Eu me sentiria confortável em procurar ajuda dentro da instituição.": "Conforto",
     "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.": "Suporte",
-    "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.": "Crença",
+    "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.": "Crença"
+}
+
+nomes_curtos_bloco2 = {
     "Eu já pensei em utilizar o NAP (Núcleo de Apoio Psicopedagógico) em algum momento.": "Intenção",
     "Tenho confiança na confidencialidade do atendimento oferecido pelo NAP (Núcleo de Apoio Psicopedagógico).": "Confiança"
 }
 
-# Verificar quais colunas existem
-cols_existentes = [col for col in cols_correlacao if col in df.columns]
+st.info("ℹ️ **Nota:** As perguntas sobre necessidade/suporte foram respondidas por um grupo de alunos, enquanto as perguntas sobre intenção/confiança foram respondidas por outro grupo. Por isso, não é possível calcular correlação entre esses blocos.")
 
-if len(cols_existentes) >= 2:
-    # Criar matriz de correlação vazia
-    labels = [nomes_curtos[col] for col in cols_existentes]
-    corr_matrix = pd.DataFrame(index=labels, columns=labels, dtype=float)
+# ============================================================
+# BLOCO 1 - Necessidade e Suporte
+# ============================================================
+st.markdown("### Bloco 1: Necessidade, Conforto, Suporte e Crença")
+
+cols_exist_bloco1 = [col for col in bloco1_cols if col in df.columns]
+
+if len(cols_exist_bloco1) >= 2:
+    # Limpar dados
+    df_clean1 = df[cols_exist_bloco1].dropna()
     
-    # Calcular correlação para cada par de colunas (usando apenas pares não nulos)
-    for i, col1 in enumerate(cols_existentes):
-        for j, col2 in enumerate(cols_existentes):
-            if i <= j:  # Só calcular metade (depois espelha)
-                nome1 = nomes_curtos[col1]
-                nome2 = nomes_curtos[col2]
-                
-                # Pegar apenas linhas onde AMBAS as colunas têm valores válidos
-                df_pair = df[[col1, col2]].dropna()
-                
-                if len(df_pair) >= 3:
-                    try:
-                        corr_value = df_pair[col1].corr(df_pair[col2])
-                        
-                        # Verificar se o valor é válido (não é NaN)
-                        if pd.notna(corr_value):
-                            corr_matrix.loc[nome1, nome2] = corr_value
-                            corr_matrix.loc[nome2, nome1] = corr_value  # Espelha
-                        else:
-                            # Se correlação for NaN (ex: todos os valores iguais), colocar 0
-                            corr_matrix.loc[nome1, nome2] = 0
-                            corr_matrix.loc[nome2, nome1] = 0
-                    except:
-                        # Em caso de erro, colocar 0
-                        corr_matrix.loc[nome1, nome2] = 0
-                        corr_matrix.loc[nome2, nome1] = 0
-                else:
-                    # Dados insuficientes
-                    corr_matrix.loc[nome1, nome2] = 0
-                    corr_matrix.loc[nome2, nome1] = 0
-    
-    # Preencher diagonal com 1
-    for nome in labels:
-        corr_matrix.loc[nome, nome] = 1.0
-    
-    # Mostrar info sobre pares
-    st.caption(f"📊 Correlações calculadas usando pares de respostas válidas")
-    
-    # Máscara para mostrar apenas o triângulo inferior
-    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-    corr_matrix_masked = corr_matrix.mask(mask)
-    
-    # Plotar heatmap
-    fig_corr = px.imshow(
-        corr_matrix_masked, 
-        text_auto='.2f', 
-        aspect='auto', 
-        color_continuous_scale='RdBu_r', 
-        zmin=-1, 
-        zmax=1
-    )
-    fig_corr.update_layout(height=500)
-    st.plotly_chart(fig_corr, use_container_width=True)
-    
-    # Debug: mostrar quantos pares foram calculados
-    with st.expander("🔧 Ver detalhes das correlações"):
-        st.write("**Número de pares válidos por correlação:**")
-        for i, col1 in enumerate(cols_existentes):
-            for j, col2 in enumerate(cols_existentes):
-                if i < j:
-                    df_pair = df[[col1, col2]].dropna()
-                    nome1 = nomes_curtos[col1]
-                    nome2 = nomes_curtos[col2]
-                    st.write(f"{nome1} x {nome2}: {len(df_pair)} respostas")
+    if len(df_clean1) >= 3:
+        corr_matrix1 = df_clean1.corr()
+        corr_matrix1 = corr_matrix1.rename(index=nomes_curtos_bloco1, columns=nomes_curtos_bloco1)
         
-        st.write("**Matriz completa:**")
-        st.dataframe(corr_matrix.style.format("{:.3f}"))
+        mask1 = np.triu(np.ones_like(corr_matrix1, dtype=bool))
+        corr_matrix_masked1 = corr_matrix1.mask(mask1)
+        
+        fig1 = px.imshow(
+            corr_matrix_masked1,
+            text_auto='.2f',
+            aspect='auto',
+            color_continuous_scale='RdBu_r',
+            zmin=-1, zmax=1
+        )
+        fig1.update_layout(height=400)
+        st.plotly_chart(fig1, use_container_width=True)
+        
+        st.caption(f"📊 Base: {len(df_clean1)} respostas completas")
+    else:
+        st.warning(f"Dados insuficientes para correlação")
+
+# ============================================================
+# BLOCO 2 - Intenção e Confiança
+# ============================================================
+st.markdown("### Bloco 2: Intenção e Confiança no NAP")
+
+cols_exist_bloco2 = [col for col in bloco2_cols if col in df.columns]
+
+if len(cols_exist_bloco2) >= 2:
+    df_clean2 = df[cols_exist_bloco2].dropna()
     
-    with st.expander("📖 Como interpretar este gráfico"):
-        st.markdown("""
-        - **Vermelho (> 0.5)**: Perguntas positivamente relacionadas.
-        - **Azul (< -0.5)**: Relação inversa.
-        - **Próximo de zero**: Sem relação significativa.
-        - **Valores em branco**: Triângulo superior omitido.
-        """)
-else:
-    st.warning(f"Colunas insuficientes: encontradas {len(cols_existentes)} de 6 necessárias")
+    if len(df_clean2) >= 3:
+        corr_matrix2 = df_clean2.corr()
+        corr_matrix2 = corr_matrix2.rename(index=nomes_curtos_bloco2, columns=nomes_curtos_bloco2)
+        
+        mask2 = np.triu(np.ones_like(corr_matrix2, dtype=bool))
+        corr_matrix_masked2 = corr_matrix2.mask(mask2)
+        
+        fig2 = px.imshow(
+            corr_matrix_masked2,
+            text_auto='.2f',
+            aspect='auto',
+            color_continuous_scale='RdBu_r',
+            zmin=-1, zmax=1
+        )
+        fig2.update_layout(height=400)
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        st.caption(f"📊 Base: {len(df_clean2)} respostas completas")
+        
+        # Mostrar valor específico
+        if len(cols_exist_bloco2) == 2:
+            col1, col2 = cols_exist_bloco2
+            corr_value = df_clean2[col1].corr(df_clean2[col2])
+            st.metric("Correlação entre Intenção e Confiança", f"{corr_value:.3f}")
+    else:
+        st.warning(f"Dados insuficientes para correlação")
+
+with st.expander("📖 Como interpretar este gráfico"):
+    st.markdown("""
+    - **Vermelho (> 0.5)**: Perguntas positivamente relacionadas.
+    - **Azul (< -0.5)**: Relação inversa.
+    - **Próximo de zero**: Sem relação significativa.
+    - **Bloco 1**: Correlações entre Necessidade, Conforto, Suporte e Crença.
+    - **Bloco 2**: Correlação entre Intenção e Confiança.
+    """)
 
 # ============================================================
 # COMPARAÇÃO CAMPI COM LEGENDA
