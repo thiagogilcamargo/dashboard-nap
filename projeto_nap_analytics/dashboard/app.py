@@ -318,6 +318,190 @@ with st.expander("📖 Como interpretar este gráfico"):
     - **Bloco 2**: Correlação entre Intenção e Confiança.
     """)
 
+# GUIA DE ANÁLISE INTERATIVO
+st.markdown("---")
+st.subheader("📈 Análise dos Dados - Clique e descubra")
+
+st.markdown("💡 **Selecione uma correlação abaixo para entender o que ela significa:**")
+
+# Criar abas para cada bloco
+tab1, tab2, tab3 = st.tabs(["🔴 Bloco 1 - Necessidade/Suporte", "🟢 Bloco 2 - Intenção/Confiança", "🎯 Ações Prioritárias"])
+
+# ============================================================
+# TAB 1 - BLOCO 1
+# ============================================================
+with tab1:
+    st.markdown("### Correlações entre Necessidade, Conforto, Suporte e Crença")
+    
+    # Grid de cards interativos (2x3)
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        with st.container(border=True):
+            st.markdown("#### 📌 Necessidade ↔ Conforto")
+            st.markdown("**Valor:** 0.14 (Fraca positiva)")
+            if st.button("🔍 O que significa?", key="btn_nec_conf"):
+                st.info("""
+                **Significado:** Quem sente necessidade de apoio tem POUCA tendência a se sentir confortável para pedir ajuda.
+                
+                **Problema:** Alunos que precisam ainda têm vergonha ou receio.
+                
+                **✅ Ação:** Trabalhar o estigma e normalizar pedir ajuda.
+                """)
+            
+        with st.container(border=True):
+            st.markdown("#### 📌 Necessidade ↔ Suporte")
+            st.markdown("**Valor:** -0.19 (Fraca negativa)")
+            if st.button("🔍 O que significa?", key="btn_nec_sup"):
+                st.error("""
+                **Significado:** Quanto MAIS o aluno precisa, MENOS ele percebe que a faculdade oferece suporte.
+                
+                **🔴 Este é um ALERTA!** O serviço existe mas não está sendo percebido.
+                
+                **✅ Ação:** COMUNICAR MAIS! Campanha de divulgação urgente.
+                """)
+            
+        with st.container(border=True):
+            st.markdown("#### 📌 Necessidade ↔ Crença")
+            st.markdown("**Valor:** -0.09 (Quase zero)")
+            if st.button("🔍 O que significa?", key="btn_nec_cre"):
+                st.info("""
+                **Significado:** Precisar de ajuda não faz acreditar mais ou menos que o serviço funciona.
+                
+                **Leitura:** O NAP é bem visto independentemente da necessidade do aluno.
+                
+                **✅ Ação:** Manter a boa reputação do serviço.
+                """)
+    
+    with col2:
+        with st.container(border=True):
+            st.markdown("#### 📌 Conforto ↔ Suporte")
+            st.markdown("**Valor:** 0.07 (Quase zero)")
+            if st.button("🔍 O que significa?", key="btn_conf_sup"):
+                st.info("""
+                **Significado:** Sentir conforto para pedir ajuda não tem relação com perceber que há suporte.
+                
+                **Leitura:** São dimensões independentes. Um aluno pode se sentir confortável mas não saber que o suporte existe.
+                
+                **✅ Ação:** Trabalhar as duas frentes separadamente.
+                """)
+            
+        with st.container(border=True):
+            st.markdown("#### 📌 Conforto ↔ Crença")
+            st.markdown("**Valor:** 0.35 (Moderada positiva)")
+            if st.button("🔍 O que significa?", key="btn_conf_cre"):
+                st.success("""
+                **Significado:** Quem se sente confortável em pedir ajuda, ACREDITA mais que o serviço funciona.
+                
+                **✅ BOM SINAL!** Ambiente acolhedor aumenta a credibilidade do NAP.
+                
+                **✅ Ação:** Criar ambiente acolhedor e reduzir estigma. Depoimentos ajudam!
+                """)
+            
+        with st.container(border=True):
+            st.markdown("#### 📌 Suporte ↔ Crença")
+            st.markdown("**Valor:** -0.05 (Quase zero)")
+            if st.button("🔍 O que significa?", key="btn_sup_cre"):
+                st.warning("""
+                **Significado:** Perceber que há suporte não faz o aluno acreditar mais no serviço.
+                
+                **⚠️ Atenção:** Talvez os alunos vejam "suporte" como algo superficial ou burocrático.
+                
+                **✅ Ação:** Investigar o que os alunos entendem por "suporte" e melhorar a comunicação.
+                """)
+
+# ============================================================
+# TAB 2 - BLOCO 2
+# ============================================================
+with tab2:
+    st.markdown("### Correlação entre Intenção e Confiança")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.metric("📊 Correlação", "0.445", delta="Moderada positiva", delta_color="normal")
+        
+        st.markdown("**Força da correlação:**")
+        st.progress(0.445, text="44.5%")
+    
+    with col2:
+        if st.button("🔍 O que significa esta correlação?", key="btn_int_conf", use_container_width=True):
+            st.success("""
+            ### ✅ Significado:
+            
+            **Quem confia na confidencialidade do atendimento tem MAIS intenção de usar o NAP.**
+            
+            ---
+            
+            ### 🎯 O que fazer com isso:
+            
+            1. **Comunicar SIGILO** em todas as campanhas
+            2. **Depoimentos** de quem usou o NAP
+            3. **Transparência** sobre como os dados são tratados
+            
+            ---
+            
+            ### 📈 Expectativa:
+            
+            Aumentar a confiança em 1 ponto pode aumentar a intenção de uso em 0.44 pontos.
+            """)
+    
+    with st.expander("❓ Por que não há correlação entre os blocos?"):
+        st.markdown("""
+        As perguntas sobre **Necessidade/Suporte** foram respondidas por um grupo de alunos (quem ainda não usou o NAP).  
+        As perguntas sobre **Intenção/Confiança** foram respondidas por outro grupo.  
+        
+        **Resultado:** Não é possível calcular correlação entre os blocos porque nenhum aluno respondeu os dois conjuntos de perguntas.
+        """)
+
+# ============================================================
+# TAB 3 - AÇÕES PRIORITÁRIAS
+# ============================================================
+with tab3:
+    st.markdown("### 🎯 O que fazer com esses dados?")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🔴 URGENTE")
+        with st.container(border=True):
+            st.markdown("**1. Comunicar confidencialidade**")
+            st.caption("Correlação: 0.445 (Intenção x Confiança)")
+            st.checkbox("Criar material sobre sigilo", key="acao1")
+            st.checkbox("Incluir no site/e-mail", key="acao2")
+            
+        with st.container(border=True):
+            st.markdown("**2. Divulgar que o serviço existe**")
+            st.caption("Correlação: -0.19 (Necessidade x Suporte)")
+            st.checkbox("Campanha de divulgação geral", key="acao3")
+            st.checkbox("Cartazes nos campi", key="acao4")
+    
+    with col2:
+        st.markdown("#### 🟡 IMPORTANTE")
+        with st.container(border=True):
+            st.markdown("**3. Criar ambiente acolhedor**")
+            st.caption("Correlação: 0.35 (Conforto x Crença)")
+            st.checkbox("Reduzir estigma sobre saúde mental", key="acao5")
+            st.checkbox("Treinar recepção e atendimento", key="acao6")
+            
+        with st.container(border=True):
+            st.markdown("**4. Coletar depoimentos**")
+            st.caption("Usuários do NAP aprovam o serviço")
+            st.checkbox("Coletar depoimentos em vídeo", key="acao7")
+            st.checkbox("Divulgar nas redes sociais", key="acao8")
+    
+    st.markdown("---")
+    st.markdown("#### 📊 Marque as ações acima e acompanhe seu progresso:")
+    
+    checkboxes = ["acao1", "acao2", "acao3", "acao4", "acao5", "acao6", "acao7", "acao8"]
+    marcadas = sum([st.session_state.get(cb, False) for cb in checkboxes])
+    
+    st.progress(marcadas / len(checkboxes), text=f"{marcadas} de {len(checkboxes)} ações planejadas")
+    
+    if marcadas == len(checkboxes):
+        st.balloons()
+        st.success("🎉 Parabéns! Todas as ações planejadas! Agora é executar!")
+
 # ============================================================
 # COMPARAÇÃO CAMPI COM LEGENDA
 # ============================================================
