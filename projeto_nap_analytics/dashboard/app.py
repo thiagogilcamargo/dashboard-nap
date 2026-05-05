@@ -29,6 +29,19 @@ def carregar_e_processar():
     return df
 
 df = carregar_e_processar()
+# Depois de df = carregar_e_processar(), adicione:
+
+# ============================================================
+# DEBUG - MOSTRAR COLUNAS REAIS (REMOVER DEPOIS)
+# ============================================================
+with st.expander("🔧 DEBUG - Colunas encontradas no CSV"):
+    st.write("**Colunas relacionadas ao NAP:**")
+    for col in df.columns:
+        if any(word in col.lower() for word in ['nap', 'emocional', 'confort', 'suporte', 'crença', 'acredito', 'confiança', 'confidencial', 'acessar']):
+            st.write(f"- `{col}`")
+    
+    st.write("**Primeiras 5 linhas de dados:**")
+    st.dataframe(df.head())
 
 # ============================================================
 # FUNÇÃO PARA GERAR HTML (RELATÓRIO)
