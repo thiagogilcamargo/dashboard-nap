@@ -29,9 +29,13 @@ def carregar_e_processar():
     return df
 
 df = carregar_e_processar()
-# Depois de df = carregar_e_processar(), adicione:
 
-
+# ============================================================
+# VERIFICAÇÃO DE DADOS
+# ============================================================
+if df.empty:
+    st.error("❌ Não foi possível carregar os dados. Verifique o arquivo dados.csv")
+    st.stop()
 
 # ============================================================
 # FUNÇÃO PARA GERAR HTML (RELATÓRIO)
@@ -241,7 +245,7 @@ nomes_curtos_bloco2 = {
 st.info("ℹ️ **Nota:** As perguntas sobre necessidade/suporte foram respondidas por um grupo de alunos, enquanto as perguntas sobre intenção/confiança foram respondidas por outro grupo. Por isso, não é possível calcular correlação entre esses blocos.")
 
 # ============================================================
-# BLOCO 1 - Necessidade e Suporte
+# BLOCO 1 - Necessidade e Suporte (DINÂMICO)
 # ============================================================
 st.markdown("### Bloco 1: Necessidade, Conforto, Suporte e Crença")
 
@@ -252,6 +256,7 @@ if len(cols_exist_bloco1) >= 2:
     df_clean1 = df[cols_exist_bloco1].dropna()
     
     if len(df_clean1) >= 3:
+        # Matriz de correlação
         corr_matrix1 = df_clean1.corr()
         corr_matrix1 = corr_matrix1.rename(index=nomes_curtos_bloco1, columns=nomes_curtos_bloco1)
         
@@ -271,9 +276,11 @@ if len(cols_exist_bloco1) >= 2:
         st.caption(f"📊 Base: {len(df_clean1)} respostas completas")
     else:
         st.warning(f"Dados insuficientes para correlação")
+else:
+    st.warning("Colunas necessárias não encontradas no dataset")
 
 # ============================================================
-# BLOCO 2 - Intenção e Confiança
+# BLOCO 2 - Intenção e Confiança (DINÂMICO)
 # ============================================================
 st.markdown("### Bloco 2: Intenção e Confiança no NAP")
 
@@ -308,6 +315,8 @@ if len(cols_exist_bloco2) >= 2:
             st.metric("Correlação entre Intenção e Confiança", f"{corr_value:.3f}")
     else:
         st.warning(f"Dados insuficientes para correlação")
+else:
+    st.warning("Colunas necessárias não encontradas no dataset")
 
 with st.expander("📖 Como interpretar este gráfico"):
     st.markdown("""
@@ -318,7 +327,9 @@ with st.expander("📖 Como interpretar este gráfico"):
     - **Bloco 2**: Correlação entre Intenção e Confiança.
     """)
 
-# GUIA DE ANÁLISE INTERATIVO
+# ============================================================
+# GUIA DE ANÁLISE INTERATIVO (VERSÃO DINÂMICA)
+# ============================================================
 st.markdown("---")
 st.subheader("📈 Análise dos Dados - Clique e descubra")
 
@@ -328,131 +339,215 @@ st.markdown("💡 **Selecione uma correlação abaixo para entender o que ela si
 tab1, tab2, tab3 = st.tabs(["🔴 Bloco 1 - Necessidade/Suporte", "🟢 Bloco 2 - Intenção/Confiança", "🎯 Ações Prioritárias"])
 
 # ============================================================
-# TAB 1 - BLOCO 1
+# TAB 1 - BLOCO 1 (VERSÃO DINÂMICA)
 # ============================================================
 with tab1:
     st.markdown("### Correlações entre Necessidade, Conforto, Suporte e Crença")
     
-    # Grid de cards interativos (2x3)
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        with st.container(border=True):
-            st.markdown("#### 📌 Necessidade ↔ Conforto")
-            st.markdown("**Valor:** 0.14 (Fraca positiva)")
-            if st.button("🔍 O que significa?", key="btn_nec_conf"):
-                st.info("""
-                **Significado:** Quem sente necessidade de apoio tem POUCA tendência a se sentir confortável para pedir ajuda.
+    if len(cols_exist_bloco1) >= 2 and len(df_clean1) >= 3:
+        # Calcular correlações reais
+        corr_real = df_clean1.corr()
+        
+        # Lista de pares para análise
+        pares = [
+            ("Já senti necessidade de apoio emocional durante a graduação.", 
+             "Eu me sentiria confortável em procurar ajuda dentro da instituição."),
+            ("Já senti necessidade de apoio emocional durante a graduação.",
+             "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."),
+            ("Já senti necessidade de apoio emocional durante a graduação.",
+             "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."),
+            ("Eu me sentiria confortável em procurar ajuda dentro da instituição.",
+             "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade."),
+            ("Eu me sentiria confortável em procurar ajuda dentro da instituição.",
+             "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos."),
+            ("Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade.",
+             "Acredito que serviços de apoio podem melhorar a experiência acadêmica dos alunos.")
+        ]
+        
+        nomes_exibicao = [
+            ("Necessidade", "Conforto"),
+            ("Necessidade", "Suporte"),
+            ("Necessidade", "Crença"),
+            ("Conforto", "Suporte"),
+            ("Conforto", "Crença"),
+            ("Suporte", "Crença")
+        ]
+        
+        col1, col2 = st.columns(2)
+        
+        for i, ((col_a, col_b), (nome_a, nome_b)) in enumerate(zip(pares, nomes_exibicao)):
+            if col_a in corr_real.index and col_b in corr_real.columns:
+                corr_val = corr_real.loc[col_a, col_b]
                 
-                **Problema:** Alunos que precisam ainda têm vergonha ou receio.
-                
-                **✅ Ação:** Trabalhar o estigma e normalizar pedir ajuda.
-                """)
-            
-        with st.container(border=True):
-            st.markdown("#### 📌 Necessidade ↔ Suporte")
-            st.markdown("**Valor:** -0.19 (Fraca negativa)")
-            if st.button("🔍 O que significa?", key="btn_nec_sup"):
-                st.error("""
-                **Significado:** Quanto MAIS o aluno precisa, MENOS ele percebe que a faculdade oferece suporte.
-                
-                **🔴 Este é um ALERTA!** O serviço existe mas não está sendo percebido.
-                
-                **✅ Ação:** COMUNICAR MAIS! Campanha de divulgação urgente.
-                """)
-            
-        with st.container(border=True):
-            st.markdown("#### 📌 Necessidade ↔ Crença")
-            st.markdown("**Valor:** -0.09 (Quase zero)")
-            if st.button("🔍 O que significa?", key="btn_nec_cre"):
-                st.info("""
-                **Significado:** Precisar de ajuda não faz acreditar mais ou menos que o serviço funciona.
-                
-                **Leitura:** O NAP é bem visto independentemente da necessidade do aluno.
-                
-                **✅ Ação:** Manter a boa reputação do serviço.
-                """)
-    
-    with col2:
-        with st.container(border=True):
-            st.markdown("#### 📌 Conforto ↔ Suporte")
-            st.markdown("**Valor:** 0.07 (Quase zero)")
-            if st.button("🔍 O que significa?", key="btn_conf_sup"):
-                st.info("""
-                **Significado:** Sentir conforto para pedir ajuda não tem relação com perceber que há suporte.
-                
-                **Leitura:** São dimensões independentes. Um aluno pode se sentir confortável mas não saber que o suporte existe.
-                
-                **✅ Ação:** Trabalhar as duas frentes separadamente.
-                """)
-            
-        with st.container(border=True):
-            st.markdown("#### 📌 Conforto ↔ Crença")
-            st.markdown("**Valor:** 0.35 (Moderada positiva)")
-            if st.button("🔍 O que significa?", key="btn_conf_cre"):
-                st.success("""
-                **Significado:** Quem se sente confortável em pedir ajuda, ACREDITA mais que o serviço funciona.
-                
-                **✅ BOM SINAL!** Ambiente acolhedor aumenta a credibilidade do NAP.
-                
-                **✅ Ação:** Criar ambiente acolhedor e reduzir estigma. Depoimentos ajudam!
-                """)
-            
-        with st.container(border=True):
-            st.markdown("#### 📌 Suporte ↔ Crença")
-            st.markdown("**Valor:** -0.05 (Quase zero)")
-            if st.button("🔍 O que significa?", key="btn_sup_cre"):
-                st.warning("""
-                **Significado:** Perceber que há suporte não faz o aluno acreditar mais no serviço.
-                
-                **⚠️ Atenção:** Talvez os alunos vejam "suporte" como algo superficial ou burocrático.
-                
-                **✅ Ação:** Investigar o que os alunos entendem por "suporte" e melhorar a comunicação.
-                """)
+                with (col1 if i < 3 else col2):
+                    with st.container(border=True):
+                        st.markdown(f"#### 📌 {nome_a} ↔ {nome_b}")
+                        
+                        # Cor da métrica baseada no valor
+                        if corr_val > 0.3:
+                            st.markdown(f"**Valor:** :green[{corr_val:.2f}] (Moderada positiva)")
+                        elif corr_val < -0.3:
+                            st.markdown(f"**Valor:** :red[{corr_val:.2f}] (Moderada negativa)")
+                        else:
+                            st.markdown(f"**Valor:** :gray[{corr_val:.2f}] (Fraca)")
+                        
+                        if st.button(f"🔍 O que significa?", key=f"btn_din_{i}"):
+                            if nome_a == "Necessidade" and nome_b == "Conforto":
+                                if corr_val < 0.2:
+                                    st.info("""
+                                    **Significado:** Quem sente necessidade de apoio tem POUCA tendência a se sentir confortável para pedir ajuda.
+                                    
+                                    **Problema:** Alunos que precisam ainda têm vergonha ou receio.
+                                    
+                                    **✅ Ação:** Trabalhar o estigma e normalizar pedir ajuda.
+                                    """)
+                                else:
+                                    st.success("""
+                                    **Significado:** Alunos que precisam se sentem confortáveis para pedir ajuda.
+                                    
+                                    **✅ BOM SINAL!** Ambiente acolhedor.
+                                    """)
+                            
+                            elif nome_a == "Necessidade" and nome_b == "Suporte":
+                                if corr_val < -0.1:
+                                    st.error("""
+                                    **Significado:** Quanto MAIS o aluno precisa, MENOS ele percebe que a faculdade oferece suporte.
+                                    
+                                    **🔴 ALERTA!** O serviço existe mas não está sendo percebido.
+                                    
+                                    **✅ Ação:** COMUNICAR MAIS! Campanha de divulgação urgente.
+                                    """)
+                                else:
+                                    st.info("""
+                                    **Significado:** Necessidade e percepção de suporte são independentes.
+                                    
+                                    **✅ Ação:** Manter comunicação sobre os serviços disponíveis.
+                                    """)
+                            
+                            elif nome_a == "Necessidade" and nome_b == "Crença":
+                                st.info("""
+                                **Significado:** Precisar de ajuda não faz acreditar mais ou menos que o serviço funciona.
+                                
+                                **Leitura:** O NAP é bem visto independentemente da necessidade do aluno.
+                                
+                                **✅ Ação:** Manter a boa reputação do serviço.
+                                """)
+                            
+                            elif nome_a == "Conforto" and nome_b == "Suporte":
+                                if corr_val > 0.3:
+                                    st.success("""
+                                    **Significado:** Ambientes acolhedores aumentam a percepção de suporte.
+                                    
+                                    **✅ Ação:** Investir em atendimento humanizado.
+                                    """)
+                                else:
+                                    st.info("""
+                                    **Significado:** Sentir conforto para pedir ajuda não tem relação com perceber que há suporte.
+                                    
+                                    **✅ Ação:** Trabalhar as duas frentes separadamente.
+                                    """)
+                            
+                            elif nome_a == "Conforto" and nome_b == "Crença":
+                                if corr_val > 0.3:
+                                    st.success(f"""
+                                    **Significado:** Quem se sente confortável em pedir ajuda, ACREDITA mais que o serviço funciona (r={corr_val:.2f}).
+                                    
+                                    **✅ BOM SINAL!** Ambiente acolhedor aumenta a credibilidade do NAP.
+                                    
+                                    **✅ Ação:** Criar ambiente acolhedor e reduzir estigma.
+                                    """)
+                                else:
+                                    st.info("""
+                                    **Significado:** Conforto e crença no serviço são independentes.
+                                    """)
+                            
+                            elif nome_a == "Suporte" and nome_b == "Crença":
+                                st.warning("""
+                                **Significado:** Perceber que há suporte não faz o aluno acreditar mais no serviço.
+                                
+                                **⚠️ Atenção:** Talvez os alunos vejam "suporte" como algo superficial.
+                                
+                                **✅ Ação:** Investigar o que os alunos entendem por "suporte".
+                                """)
+    else:
+        st.warning("Dados insuficientes para análise de correlação")
 
 # ============================================================
-# TAB 2 - BLOCO 2
+# TAB 2 - BLOCO 2 (VERSÃO DINÂMICA)
 # ============================================================
 with tab2:
     st.markdown("### Correlação entre Intenção e Confiança")
     
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.metric("📊 Correlação", "0.445", delta="Moderada positiva", delta_color="normal")
+    if len(cols_exist_bloco2) >= 2 and len(df_clean2) >= 3:
+        col1_int, col2_int = cols_exist_bloco2[0], cols_exist_bloco2[1]
+        corr_int_conf = df_clean2[col1_int].corr(df_clean2[col2_int])
         
-        st.markdown("**Força da correlação:**")
-        st.progress(0.445, text="44.5%")
-    
-    with col2:
-        if st.button("🔍 O que significa esta correlação?", key="btn_int_conf", use_container_width=True):
-            st.success("""
-            ### ✅ Significado:
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # Cor da métrica baseada no valor
+            if corr_int_conf > 0.3:
+                st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Moderada positiva", delta_color="normal")
+            elif corr_int_conf < 0:
+                st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Negativa", delta_color="inverse")
+            else:
+                st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Fraca positiva", delta_color="off")
             
-            **Quem confia na confidencialidade do atendimento tem MAIS intenção de usar o NAP.**
+            st.markdown("**Força da correlação:**")
+            st.progress(min(abs(corr_int_conf), 1.0), text=f"{abs(corr_int_conf)*100:.1f}%")
+        
+        with col2:
+            if st.button("🔍 O que significa esta correlação?", key="btn_int_conf_din", use_container_width=True):
+                if corr_int_conf > 0.3:
+                    st.success(f"""
+                    ### ✅ Significado:
+                    
+                    **Quem confia na confidencialidade tem MAIS intenção de usar o NAP (r={corr_int_conf:.3f}).**
+                    
+                    ---
+                    
+                    ### 🎯 O que fazer com isso:
+                    
+                    1. **Comunicar SIGILO** em todas as campanhas
+                    2. **Depoimentos** de quem usou o NAP
+                    3. **Transparência** sobre como os dados são tratados
+                    """)
+                elif corr_int_conf > 0:
+                    st.info(f"""
+                    ### ℹ️ Significado:
+                    
+                    **Há uma leve tendência positiva (r={corr_int_conf:.3f}).**
+                    
+                    Confiança influencia intenção, mas outros fatores também são importantes.
+                    
+                    ### 🎯 Ações recomendadas:
+                    
+                    - Fortalecer comunicação sobre sigilo
+                    - Coletar feedback sobre barreiras de uso
+                    """)
+                else:
+                    st.warning(f"""
+                    ### ⚠️ Significado:
+                    
+                    **Correlação negativa ou próxima de zero (r={corr_int_conf:.3f}).**
+                    
+                    Confiança no sigilo NÃO está relacionada com intenção de usar.
+                    
+                    ### 🔍 Investigar:
+                    
+                    - Quais são as reais barreiras de acesso?
+                    - Falta de tempo? Desconhecimento? Outros motivos?
+                    """)
+        
+        with st.expander("❓ Por que não há correlação entre os blocos?"):
+            st.markdown("""
+            As perguntas sobre **Necessidade/Suporte** foram respondidas por um grupo de alunos (quem ainda não usou o NAP).  
+            As perguntas sobre **Intenção/Confiança** foram respondidas por outro grupo.  
             
-            ---
-            
-            ### 🎯 O que fazer com isso:
-            
-            1. **Comunicar SIGILO** em todas as campanhas
-            2. **Depoimentos** de quem usou o NAP
-            3. **Transparência** sobre como os dados são tratados
-            
-            ---
-            
-            ### 📈 Expectativa:
-            
-            Aumentar a confiança em 1 ponto pode aumentar a intenção de uso em 0.44 pontos.
+            **Resultado:** Não é possível calcular correlação entre os blocos porque nenhum aluno respondeu os dois conjuntos de perguntas.
             """)
-    
-    with st.expander("❓ Por que não há correlação entre os blocos?"):
-        st.markdown("""
-        As perguntas sobre **Necessidade/Suporte** foram respondidas por um grupo de alunos (quem ainda não usou o NAP).  
-        As perguntas sobre **Intenção/Confiança** foram respondidas por outro grupo.  
-        
-        **Resultado:** Não é possível calcular correlação entre os blocos porque nenhum aluno respondeu os dois conjuntos de perguntas.
-        """)
+    else:
+        st.warning("Dados insuficientes para análise de correlação")
 
 # ============================================================
 # TAB 3 - AÇÕES PRIORITÁRIAS
@@ -466,13 +561,15 @@ with tab3:
         st.markdown("#### 🔴 URGENTE")
         with st.container(border=True):
             st.markdown("**1. Comunicar confidencialidade**")
-            st.caption("Correlação: 0.445 (Intenção x Confiança)")
+            if len(cols_exist_bloco2) >= 2 and len(df_clean2) >= 3:
+                corr_val = df_clean2[cols_exist_bloco2[0]].corr(df_clean2[cols_exist_bloco2[1]])
+                st.caption(f"Correlação: {corr_val:.3f} (Intenção x Confiança)")
             st.checkbox("Criar material sobre sigilo", key="acao1")
             st.checkbox("Incluir no site/e-mail", key="acao2")
             
         with st.container(border=True):
             st.markdown("**2. Divulgar que o serviço existe**")
-            st.caption("Correlação: -0.19 (Necessidade x Suporte)")
+            st.caption(f"Gap: {gap:.1f} pontos | {pct_nao:.0f}% desconhecem")
             st.checkbox("Campanha de divulgação geral", key="acao3")
             st.checkbox("Cartazes nos campi", key="acao4")
     
@@ -480,13 +577,13 @@ with tab3:
         st.markdown("#### 🟡 IMPORTANTE")
         with st.container(border=True):
             st.markdown("**3. Criar ambiente acolhedor**")
-            st.caption("Correlação: 0.35 (Conforto x Crença)")
-            st.checkbox("Reduzir estigma sobre saúde mental", key="acao5")
-            st.checkbox("Treinar recepção e atendimento", key="acao6")
+            st.caption("Reduzir estigma sobre saúde mental")
+            st.checkbox("Treinar recepção e atendimento", key="acao5")
+            st.checkbox("Criar canais anônimos de acolhimento", key="acao6")
             
         with st.container(border=True):
             st.markdown("**4. Coletar depoimentos**")
-            st.caption("Usuários do NAP aprovam o serviço")
+            st.caption(f"{pct_usou:.0f}% dos alunos usaram o NAP")
             st.checkbox("Coletar depoimentos em vídeo", key="acao7")
             st.checkbox("Divulgar nas redes sociais", key="acao8")
     
@@ -643,7 +740,7 @@ if 'Semestre' in df.columns:
         'score_suporte': 'mean',
         'score_intencao': 'mean'
     }).reset_index().dropna()
-    evolucao = evolucao.sort_values('Semestre_Num')  # Garante ordenação correta
+    evolucao = evolucao.sort_values('Semestre_Num')
     
     if len(evolucao) >= 2:
         fig_evo = go.Figure()
@@ -698,7 +795,7 @@ if scores_data:
         """)
 
 # ============================================================
-# PRIORIZAÇÃO
+# PRIORIZAÇÃO (VERSÃO DINÂMICA)
 # ============================================================
 st.markdown("---")
 st.subheader("🎯 Priorização de Problemas")
@@ -706,32 +803,51 @@ st.caption("🔍 **O que mostra?** Prioridade = Impacto / Esforço. Quanto maior
 
 problemas = []
 
+# Problema 1: Falta de informação
 col_info = None
 for col in df.columns:
-    if 'sei a quem recorrer' in col.lower():
+    if 'sei a quem recorrer' in col.lower() or 'acessar' in col.lower():
         col_info = col
         break
 
 if col_info:
     dados = pd.to_numeric(df[col_info], errors='coerce').dropna()
     if len(dados) > 0:
-        impacto_info = 10 - dados.mean()  # Quanto menos sabe, maior o impacto
-        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": 2})
+        # Quanto menos sabe, maior o impacto
+        impacto_info = 10 - dados.mean()
+        esforco_info = 2  # Baixo esforço
+        problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": esforco_info})
 
+# Problema 2: Preconceito
 col_prec = None
 for col in df.columns:
-    if 'preconceito' in col.lower():
+    if 'preconceito' in col.lower() or 'estigma' in col.lower():
         col_prec = col
         break
 
 if col_prec:
     dados = pd.to_numeric(df[col_prec], errors='coerce').dropna()
     if len(dados) > 0:
-        impacto_prec = dados.mean()  # Quanto mais preconceito, maior o impacto
-        problemas.append({"Problema": "Preconceito", "Impacto": impacto_prec, "Esforço": 6})
+        impacto_prec = dados.mean()
+        esforco_prec = 6  # Esforço médio-alto
+        problemas.append({"Problema": "Preconceito/Estigma", "Impacto": impacto_prec, "Esforço": esforco_prec})
 
-if gap > 3:
-    problemas.append({"Problema": f"Gap de {gap:.1f} pontos", "Impacto": gap, "Esforço": 5})
+# Problema 3: Gap
+if gap > 2:
+    # Esforço dinâmico baseado na magnitude do gap
+    if gap > 5:
+        esforco_gap = 8
+    elif gap > 3:
+        esforco_gap = 6
+    else:
+        esforco_gap = 4
+    problemas.append({"Problema": f"Gap de {gap:.1f} pontos", "Impacto": gap, "Esforço": esforco_gap})
+
+# Problema 4: Desconhecimento do NAP
+if pct_nao > 20:
+    impacto_desc = pct_nao / 10  # Normalizado
+    esforco_desc = 3  # Esforço baixo-médio
+    problemas.append({"Problema": f"{pct_nao:.0f}% desconhecem NAP", "Impacto": impacto_desc, "Esforço": esforco_desc})
 
 if problemas:
     df_problemas = pd.DataFrame(problemas)
@@ -739,14 +855,16 @@ if problemas:
     df_problemas = df_problemas.sort_values('Prioridade', ascending=False)
     
     fig_prior = px.bar(df_problemas, x='Problema', y='Prioridade', color='Problema', text=df_problemas['Prioridade'].round(2))
+    fig_prior.update_layout(showlegend=False)
     st.plotly_chart(fig_prior, use_container_width=True)
     
     with st.expander("📖 Como interpretar este gráfico"):
         st.markdown("""
         - **Prioridade mais alta** = maior relação Impacto/Esforço
         - **Falta de informação** tem alto impacto e baixo esforço → PRIORIDADE MÁXIMA
-        - **Preconceito** tem esforço alto (mudança cultural demora)
+        - **Desconhecimento do NAP** requer campanha de divulgação
         - **Gap** é um problema estrutural que exige ação coordenada
+        - **Preconceito** tem esforço alto (mudança cultural demora)
         """)
 
 # ============================================================
@@ -766,6 +884,7 @@ if 'Jornada' in df.columns:
     funil = funil.sort_values('Status')
     
     fig = px.bar(funil, x='Status', y='Quantidade', color='Status', text='Quantidade')
+    fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
     
     with st.expander("📖 Como interpretar este gráfico"):
@@ -815,6 +934,7 @@ if 'Campus' in df.columns:
     campus = df['Campus'].value_counts().reset_index()
     campus.columns = ['Campus', 'Quantidade']
     fig = px.bar(campus, x='Campus', y='Quantidade', color='Campus', text='Quantidade')
+    fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
