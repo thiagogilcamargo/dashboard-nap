@@ -1,4 +1,3 @@
-# dashboard/config.py
 import os
 
 # ============================================================
@@ -67,19 +66,19 @@ ESFORCO_PROBLEMAS = {
 # CORES PARA GRÁFICOS
 # ============================================================
 CORES = {
-    "necessidade": "#e74c3c",  # vermelho
-    "suporte": "#3498db",      # azul
-    "intencao": "#2ecc71",     # verde
-    "gap": "#f39c12",          # laranja
-    "positivo": "#27ae60",     # verde escuro
-    "negativo": "#c0392b",     # vermelho escuro
+    "necessidade": "#e74c3c",
+    "suporte": "#3498db",
+    "intencao": "#2ecc71",
+    "gap": "#f39c12",
+    "positivo": "#27ae60",
+    "negativo": "#c0392b",
 }
 
 # ============================================================
 # LIMIARES PARA ALERTAS
 # ============================================================
 LIMIARES = {
-    "gap_critico": 3.0,           # gap acima disso é crítico
-    "pct_alerta": 20,             # percentual que acende alerta
-    "pct_critico": 40,            # percentual que acende crítico
+    "gap_critico": 3.0,
+    "pct_alerta": 20,
+    "pct_critico": 40,
 }
