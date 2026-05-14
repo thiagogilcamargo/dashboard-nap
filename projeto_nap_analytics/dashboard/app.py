@@ -181,6 +181,88 @@ with col7:
 with col8:
     st.metric("❌ Desconhecem", f"{pct_nao:.0f}%")
 
+
+# ============================================================
+# SESSÃO DE INTRODUÇÃO - EXPLICAÇÃO DO TRABALHO
+# ============================================================
+with st.expander("📖 **ENTENDA O QUE FOI FEITO NESTA ANÁLISE**", expanded=True):
+    st.markdown("""
+    ### 🎯 **Objetivo da pesquisa**
+    
+    Avaliar a **jornada do aluno** em relação ao NAP (Núcleo de Apoio Psicopedagógico), identificando:
+    - Quantos alunos conhecem, usaram ou desconhecem o serviço
+    - Quais são as principais necessidades de apoio emocional/acadêmico
+    - Como os alunos percebem o suporte oferecido pela faculdade
+    - O que impacta a intenção de usar o NAP
+    
+    ---
+    
+    ### 🧠 **Como organizamos a análise**
+    
+    Dividimos os alunos em **3 grupos** com base na resposta à pergunta:
+    *"Quais da opções abaixo melhor representa você em relação ao NAP?"*
+    
+    | Grupo | O que significa | O que analisamos |
+    |-------|-----------------|------------------|
+    | 🔴 **Não conhece o NAP** | Nunca ouviu falar do serviço | Dados demográficos e necessidade geral |
+    | 🟡 **Conhece mas não usou** | Sabe da existência mas nunca acessou | Intenção de uso, confiança, barreiras |
+    | 🟢 **Usou o NAP** | Já utilizou o serviço | Qualidade do atendimento, satisfação, recomendação |
+    
+    ---
+    
+    ### 📊 **O que significam os números (0 a 10)**
+    
+    | Indicador | O que mede | Como calculamos |
+    |-----------|------------|-----------------|
+    | **Necessidade** | Alunos que sentem falta de apoio emocional/acadêmico | Média das respostas de quem respondeu as perguntas de necessidade |
+    | **Suporte** | Alunos que percebem que a faculdade oferece apoio | Média das respostas de quem respondeu as perguntas de suporte |
+    | **Gap** | Diferença entre necessidade e suporte | Necessidade - Suporte |
+    | **Intenção** | Disposição para usar o NAP | Média das respostas de quem respondeu as perguntas de intenção |
+    
+    ---
+    
+    ### 📈 **Como interpretar os resultados**
+    
+    | Situação | Significado | O que fazer |
+    |----------|-------------|-------------|
+    | **Gap positivo (+)** | Alunos precisam mais do que percebem que a faculdade oferece | Falta de comunicação sobre o serviço |
+    | **Gap negativo (-)** | Suporte excede a necessidade | Situação ideal - manter as ações |
+    | **Gap próximo de zero** | Necessidade e suporte estão alinhados | Equilíbrio bom, mas pode melhorar |
+    | **Alta necessidade (> 7)** | Muitos alunos reconhecem que precisam de apoio | Reforçar a oferta do serviço |
+    | **Baixo suporte (< 5)** | Alunos não percebem o apoio da faculdade | Campanha de divulgação urgente |
+    | **Alta intenção (> 7)** | Alunos querem usar o NAP | Facilitar o acesso e acolhimento |
+    
+    ---
+    
+    ### 🔍 **Como foi feita a análise**
+    
+    1. **Coleta de dados:** Formulário online (Google Forms) com fluxo condicional
+    2. **Tratamento dos dados:** Respostas anonimizadas e organizadas por grupo
+    3. **Cálculo dos scores:** Médias das respostas (0 a 10) para cada dimensão
+    4. **Correlações:** Análise de como as perguntas se relacionam dentro de cada bloco
+    5. **Filtros interativos:** Permite segmentar por campus, período, gênero, etc.
+    
+    ---
+    
+    ### 💡 **Dica importante**
+    
+    > As perguntas sobre **necessidade/suporte** foram respondidas por um grupo diferente das perguntas sobre **intenção/confiança** (fluxo condicional do Forms).  
+    > Por isso, **não calculamos correlação entre blocos diferentes** - apenas dentro de cada bloco.
+    
+    ---
+    
+    ### 📖 **Como navegar no dashboard**
+    
+    1. **Filtros na lateral esquerda** → Selecione campus, período, gênero, semestre
+    2. **KPIs no topo** → Visão geral rápida dos principais indicadores
+    3. **Central de Alertas** → Problemas identificados automaticamente
+    4. **Matriz de Correlação** → Relações entre perguntas do mesmo bloco
+    5. **Funil de Adoção** → Quantos alunos em cada etapa da jornada
+    6. **Gráficos interativos** → Clique e descubra insights
+    """)
+
+st.markdown("---")
+
 # ============================================================
 # AVISOS
 # ============================================================
