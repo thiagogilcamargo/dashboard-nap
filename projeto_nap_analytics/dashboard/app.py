@@ -311,11 +311,16 @@ st.markdown("---")
 st.success("✅ Dashboard completo com legendas explicativas!")
 
 with st.expander("📋 Resumo Executivo para Gestão"):
-    st.markdown(f"""
+    pct_nao_int = int(pct_nao)
+    gap_str = f"{gap:.1f}"
+    necessidade_str = f"{necessidade:.1f}"
+    suporte_str = f"{suporte:.1f}"
+    
+    st.markdown("""
     ### Principais conclusoes:
     
-    1. **Comunicacao é a prioridade maxima:** {int(pct_nao)}% dos alunos desconhecem o NAP.
-    2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas nao percebem que a faculdade oferece ({suporte:.1f}/10).
+    1. **Comunicacao é a prioridade maxima: """ + str(pct_nao_int) + """%** dos alunos desconhecem o NAP.
+    2. **Gap de """ + gap_str + """ pontos:** Alunos precisam de apoio (""" + necessidade_str + """/10) mas nao percebem que a faculdade oferece (""" + suporte_str + """/10).
     3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.
     
     ### Recomendacoes:
