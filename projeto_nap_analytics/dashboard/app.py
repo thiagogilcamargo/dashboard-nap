@@ -1,17 +1,17 @@
 
 | Resultado | Significado |
 |-----------|-------------|
-| **Gap positivo (+)** | Alunos precisam mais do que percebem → **FALTA DE COMUNICAÇÃO** |
-| **Gap negativo (-)** | Suporte excede necessidade → **SITUAÇÃO IDEAL** |
-| **Gap próximo de zero** | Necessidade e suporte estão alinhados |
+| **Gap positivo (+)** | Alunos precisam mais do que percebem -> **FALTA DE COMUNICACAO** |
+| **Gap negativo (-)** | Suporte excede necessidade -> **SITUACAO IDEAL** |
+| **Gap proximo de zero** | Necessidade e suporte estao alinhados |
 
 ---
 
 ### 🟢 **Sinais VERDES (bom)**
 - Suporte alto (> 7)
-- Crença alta (> 8)
+- Crenca alta (> 8)
 - Gap negativo
-- Intenção alta (> 7)
+- Intencao alta (> 7)
 - Poucos desconhecem NAP (< 20%)
 
 ### 🔴 **Sinais VERMELHOS (alerta)**
@@ -23,11 +23,11 @@
 ---
 
 ### 📖 **Como usar**
-1. **Filtros na lateral esquerda** → Selecione campus, período, gênero
-2. **KPIs coloridos** → Visão geral rápida
-3. **Alertas automáticos** → Problemas identificados
-4. **Correlações** → Relações entre perguntas
-5. **Funil de adoção** → Quantos alunos em cada etapa
+1. **Filtros na lateral esquerda** -> Selecione campus, periodo, genero
+2. **KPIs coloridos** -> Visao geral rapida
+3. **Alertas automaticos** -> Problemas identificados
+4. **Correlacoes** -> Relacoes entre perguntas
+5. **Funil de adocao** -> Quantos alunos em cada etapa
 """)
 
 st.markdown("---")
@@ -407,15 +407,15 @@ if len(cols_exist_bloco1) >= 2 and len(df_clean1) >= 3:
                         if nome_a == "Necessidade" and nome_b == "Conforto":
                             if corr_val < 0.2:
                                 st.info("""
-                                **Significado:** Quem sente necessidade de apoio tem POUCA tendência a se sentir confortável para pedir ajuda.
+                                **Significado:** Quem sente necessidade de apoio tem POUCA tendencia a se sentir confortavel para pedir ajuda.
                                 
-                                **Problema:** Alunos que precisam ainda têm vergonha ou receio.
+                                **Problema:** Alunos que precisam ainda tem vergonha ou receio.
                                 
-                                **✅ Ação:** Trabalhar o estigma e normalizar pedir ajuda.
+                                **✅ Acao:** Trabalhar o estigma e normalizar pedir ajuda.
                                 """)
                             else:
                                 st.success("""
-                                **Significado:** Alunos que precisam se sentem confortáveis para pedir ajuda.
+                                **Significado:** Alunos que precisam se sentem confortaveis para pedir ajuda.
                                 
                                 **✅ BOM SINAL!** Ambiente acolhedor.
                                 """)
@@ -425,70 +425,70 @@ if len(cols_exist_bloco1) >= 2 and len(df_clean1) >= 3:
                                 st.error("""
                                 **Significado:** Quanto MAIS o aluno precisa, MENOS ele percebe que a faculdade oferece suporte.
                                 
-                                **🔴 ALERTA!** O serviço existe mas não está sendo percebido.
+                                **🔴 ALERTA!** O servico existe mas nao esta sendo percebido.
                                 
-                                **✅ Ação:** COMUNICAR MAIS! Campanha de divulgação urgente.
+                                **✅ Acao:** COMUNICAR MAIS! Campanha de divulgacao urgente.
                                 """)
                             else:
                                 st.info("""
-                                **Significado:** Necessidade e percepção de suporte são independentes.
+                                **Significado:** Necessidade e percepcao de suporte sao independentes.
                                 
-                                **✅ Ação:** Manter comunicação sobre os serviços disponíveis.
+                                **✅ Acao:** Manter comunicacao sobre os servicos disponiveis.
                                 """)
                         
-                        elif nome_a == "Necessidade" and nome_b == "Crença":
+                        elif nome_a == "Necessidade" and nome_b == "Crenca":
                             st.info("""
-                            **Significado:** Precisar de ajuda não faz acreditar mais ou menos que o serviço funciona.
+                            **Significado:** Precisar de ajuda nao faz acreditar mais ou menos que o servico funciona.
                             
-                            **Leitura:** O NAP é bem visto independentemente da necessidade do aluno.
+                            **Leitura:** O NAP e bem visto independentemente da necessidade do aluno.
                             
-                            **✅ Ação:** Manter a boa reputação do serviço.
+                            **✅ Acao:** Manter a boa reputacao do servico.
                             """)
                         
                         elif nome_a == "Conforto" and nome_b == "Suporte":
                             if corr_val > 0.3:
                                 st.success("""
-                                **Significado:** Ambientes acolhedores aumentam a percepção de suporte.
+                                **Significado:** Ambientes acolhedores aumentam a percepcao de suporte.
                                 
-                                **✅ Ação:** Investir em atendimento humanizado.
+                                **✅ Acao:** Investir em atendimento humanizado.
                                 """)
                             else:
                                 st.info("""
-                                **Significado:** Sentir conforto para pedir ajuda não tem relação com perceber que há suporte.
+                                **Significado:** Sentir conforto para pedir ajuda nao tem relacao com perceber que ha suporte.
                                 
-                                **✅ Ação:** Trabalhar as duas frentes separadamente.
+                                **✅ Acao:** Trabalhar as duas frentes separadamente.
                                 """)
                         
-                        elif nome_a == "Conforto" and nome_b == "Crença":
+                        elif nome_a == "Conforto" and nome_b == "Crenca":
                             if corr_val > 0.3:
                                 st.success(f"""
-                                **Significado:** Quem se sente confortável em pedir ajuda, ACREDITA mais que o serviço funciona (r={corr_val:.2f}).
+                                **Significado:** Quem se sente confortavel em pedir ajuda, ACREDITA mais que o servico funciona (r={corr_val:.2f}).
                                 
                                 **✅ BOM SINAL!** Ambiente acolhedor aumenta a credibilidade do NAP.
                                 
-                                **✅ Ação:** Criar ambiente acolhedor e reduzir estigma.
+                                **✅ Acao:** Criar ambiente acolhedor e reduzir estigma.
                                 """)
                             else:
                                 st.info("""
-                                **Significado:** Conforto e crença no serviço são independentes.
+                                **Significado:** Conforto e crenca no servico sao independentes.
                                 """)
                         
-                        elif nome_a == "Suporte" and nome_b == "Crença":
+                        elif nome_a == "Suporte" and nome_b == "Crenca":
                             st.warning("""
-                            **Significado:** Perceber que há suporte não faz o aluno acreditar mais no serviço.
+                            **Significado:** Perceber que ha suporte nao faz o aluno acreditar mais no servico.
                             
-                            **⚠️ Atenção:** Talvez os alunos vejam "suporte" como algo superficial.
+                            **⚠️ Atencao:** Talvez os alunos vejam "suporte" como algo superficial.
                             
-                            **✅ Ação:** Investigar o que os alunos entendem por "suporte".
+                            **✅ Acao:** Investigar o que os alunos entendem por "suporte".
                             """)
 else:
-    st.warning("Dados insuficientes para análise de correlação")
+    st.warning("Dados insuficientes para analise de correlacao")
 
 # ============================================================
 # TAB 2 - BLOCO 2 (VERSÃO DINÂMICA)
 # ============================================================
 with tab2:
-st.markdown("### Correlação entre Intenção e Confiança")
+st.markdown("### Correlacao entre Intencao e Confianca")
 
 if len(cols_exist_bloco2) >= 2 and len(df_clean2) >= 3:
     col1_int, col2_int = cols_exist_bloco2[0], cols_exist_bloco2[1]
@@ -497,24 +497,23 @@ if len(cols_exist_bloco2) >= 2 and len(df_clean2) >= 3:
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        # Cor da métrica baseada no valor
         if corr_int_conf > 0.3:
-            st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Moderada positiva", delta_color="normal")
+            st.metric("📊 Correlacao", f"{corr_int_conf:.3f}", delta="Moderada positiva", delta_color="normal")
         elif corr_int_conf < 0:
-            st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Negativa", delta_color="inverse")
+            st.metric("📊 Correlacao", f"{corr_int_conf:.3f}", delta="Negativa", delta_color="inverse")
         else:
-            st.metric("📊 Correlação", f"{corr_int_conf:.3f}", delta="Fraca positiva", delta_color="off")
+            st.metric("📊 Correlacao", f"{corr_int_conf:.3f}", delta="Fraca positiva", delta_color="off")
         
-        st.markdown("**Força da correlação:**")
+        st.markdown("**Forca da correlacao:**")
         st.progress(min(abs(corr_int_conf), 1.0), text=f"{abs(corr_int_conf)*100:.1f}%")
     
     with col2:
-        if st.button("🔍 O que significa esta correlação?", key="btn_int_conf_din", use_container_width=True):
+        if st.button("🔍 O que significa esta correlacao?", key="btn_int_conf_din", use_container_width=True):
             if corr_int_conf > 0.3:
                 st.success(f"""
                 ### ✅ Significado:
                 
-                **Quem confia na confidencialidade tem MAIS intenção de usar o NAP (r={corr_int_conf:.3f}).**
+                **Quem confia na confidencialidade tem MAIS intencao de usar o NAP (r={corr_int_conf:.3f}).**
                 
                 ---
                 
@@ -522,44 +521,44 @@ if len(cols_exist_bloco2) >= 2 and len(df_clean2) >= 3:
                 
                 1. **Comunicar SIGILO** em todas as campanhas
                 2. **Depoimentos** de quem usou o NAP
-                3. **Transparência** sobre como os dados são tratados
+                3. **Transparencia** sobre como os dados sao tratados
                 """)
             elif corr_int_conf > 0:
                 st.info(f"""
                 ### ℹ️ Significado:
                 
-                **Há uma leve tendência positiva (r={corr_int_conf:.3f}).**
+                **Ha uma leve tendencia positiva (r={corr_int_conf:.3f}).**
                 
-                Confiança influencia intenção, mas outros fatores também são importantes.
+                Confianca influencia intencao, mas outros fatores tambem sao importantes.
                 
-                ### 🎯 Ações recomendadas:
+                ### 🎯 Acoes recomendadas:
                 
-                - Fortalecer comunicação sobre sigilo
+                - Fortalecer comunicacao sobre sigilo
                 - Coletar feedback sobre barreiras de uso
                 """)
             else:
                 st.warning(f"""
                 ### ⚠️ Significado:
                 
-                **Correlação negativa ou próxima de zero (r={corr_int_conf:.3f}).**
+                **Correlacao negativa ou proxima de zero (r={corr_int_conf:.3f}).**
                 
-                Confiança no sigilo NÃO está relacionada com intenção de usar.
+                Confianca no sigilo NAO esta relacionada com intencao de usar.
                 
                 ### 🔍 Investigar:
                 
-                - Quais são as reais barreiras de acesso?
+                - Quais sao as reais barreiras de acesso?
                 - Falta de tempo? Desconhecimento? Outros motivos?
                 """)
     
-    with st.expander("❓ Por que não há correlação entre os blocos?"):
+    with st.expander("❓ Por que nao ha correlacao entre os blocos?"):
         st.markdown("""
-        As perguntas sobre **Necessidade/Suporte** foram respondidas por um grupo de alunos (quem ainda não usou o NAP).  
-        As perguntas sobre **Intenção/Confiança** foram respondidas por outro grupo.  
+        As perguntas sobre **Necessidade/Suporte** foram respondidas por um grupo de alunos (quem ainda nao usou o NAP).  
+        As perguntas sobre **Intencao/Confianca** foram respondidas por outro grupo.  
         
-        **Resultado:** Não é possível calcular correlação entre os blocos porque nenhum aluno respondeu os dois conjuntos de perguntas.
+        **Resultado:** Nao e possivel calcular correlacao entre os blocos porque nenhum aluno respondeu os dois conjuntos de perguntas.
         """)
 else:
-    st.warning("Dados insuficientes para análise de correlação")
+    st.warning("Dados insuficientes para analise de correlacao")
 
 # ============================================================
 # TAB 3 - AÇÕES PRIORITÁRIAS
@@ -958,18 +957,18 @@ st.success("✅ Dashboard completo com legendas explicativas!")
 # Resumo executivo
 with st.expander("📋 Resumo Executivo para Gestão"):
 st.markdown(f"""
-### Principais conclusões:
+### Principais conclusoes:
 
-1. **Comunicação é a prioridade máxima:** {pct_nao:.0f}% dos alunos desconhecem o NAP.
-2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas não percebem que a faculdade oferece ({suporte:.1f}/10).
-3. **Quem usa, aprova:** As avaliações dos usuários são positivas.
+1. **Comunicacao é a prioridade maxima:** {pct_nao:.0f}% dos alunos desconhecem o NAP.
+2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas nao percebem que a faculdade oferece ({suporte:.1f}/10).
+3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.
 
-### Recomendações:
+### Recomendacoes:
 
-- ✅ Campanha de divulgação imediata
-- ✅ Comunicar claramente os serviços oferecidos
+- ✅ Campanha de divulgacao imediata
+- ✅ Comunicar claramente os servicos oferecidos
 - ✅ Coletar e divulgar depoimentos de alunos que usaram
-- ✅ Acompanhar evolução do gap semestralmente
+- ✅ Acompanhar evolucao do gap semestralmente
 """)
 
 st.caption(f"📊 Dashboard atualizado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | Base: {len(df)} alunos")
