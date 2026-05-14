@@ -311,24 +311,14 @@ st.markdown("---")
 st.success("✅ Dashboard completo com legendas explicativas!")
 
 with st.expander("📋 Resumo Executivo para Gestão"):
-    pct_nao_int = int(pct_nao)
-    gap_str = f"{gap:.1f}"
-    necessidade_str = f"{necessidade:.1f}"
-    suporte_str = f"{suporte:.1f}"
-    
-    st.markdown("""
-    ### Principais conclusoes:
-    
-    1. **Comunicacao é a prioridade maxima: """ + str(pct_nao_int) + """%** dos alunos desconhecem o NAP.
-    2. **Gap de """ + gap_str + """ pontos:** Alunos precisam de apoio (""" + necessidade_str + """/10) mas nao percebem que a faculdade oferece (""" + suporte_str + """/10).
-    3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.
-    
-    ### Recomendacoes:
-    
-    - ✅ Campanha de divulgacao imediata
-    - ✅ Comunicar claramente os servicos oferecidos
-    - ✅ Coletar e divulgar depoimentos de alunos que usaram
-    - ✅ Acompanhar evolucao do gap semestralmente
-    """)
+    st.markdown("### Principais conclusoes:\n\n")
+    st.markdown(f"1. **Comunicacao é a prioridade maxima:** {int(pct_nao)}% dos alunos desconhecem o NAP.")
+    st.markdown(f"2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas nao percebem que a faculdade oferece ({suporte:.1f}/10).")
+    st.markdown("3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.\n\n")
+    st.markdown("### Recomendacoes:\n")
+    st.markdown("- Campanha de divulgacao imediata")
+    st.markdown("- Comunicar claramente os servicos oferecidos")
+    st.markdown("- Coletar e divulgar depoimentos de alunos que usaram")
+    st.markdown("- Acompanhar evolucao do gap semestralmente")
 
 st.caption(f"📊 Dashboard atualizado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | Base: {len(df)} alunos")
