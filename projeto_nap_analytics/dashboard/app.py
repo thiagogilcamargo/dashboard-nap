@@ -191,77 +191,97 @@ with st.expander("📖 **INTRODUÇÃO - ENTENDA O QUE FOI FEITO NESTA ANÁLISE**
     
     Avaliar a **jornada do aluno** em relação ao NAP (Núcleo de Apoio Psicopedagógico), identificando:
     - Quantos alunos conhecem, usaram ou desconhecem o serviço
-    - Quais são as principais necessidades de apoio emocional/acadêmico
+    - Quais são as principais necessidades de apoio emocional/academico
     - Como os alunos percebem o suporte oferecido pela faculdade
-    - O que impacta a intenção de usar o NAP
+    - O que impacta a intencao de usar o NAP
     
     ---
     
-    ### 🧠 **Como organizamos a análise**
+    ### 🧠 **Como organizamos a analise**
     
-    Dividimos os alunos em **3 grupos** com base na resposta à pergunta:
-    *"Quais da opções abaixo melhor representa você em relação ao NAP?"*
+    Dividimos os alunos em **3 grupos** com base na resposta a pergunta:
+    *"Quais da opcoes abaixo melhor representa voce em relacao ao NAP?"*
     
     | Grupo | O que significa | O que analisamos |
     |-------|-----------------|------------------|
-    | 🔴 **Não conhece o NAP** | Nunca ouviu falar do serviço | Dados demográficos e necessidade geral |
-    | 🟡 **Conhece mas não usou** | Sabe da existência mas nunca acessou | Intenção de uso, confiança, barreiras |
-    | 🟢 **Usou o NAP** | Já utilizou o serviço | Qualidade do atendimento, satisfação, recomendação |
+    | **Nao conhece o NAP** | Nunca ouviu falar do servico | Dados demograficos e necessidade geral |
+    | **Conhece mas nao usou** | Sabe da existencia mas nunca acessou | Intencao de uso, confianca, barreiras |
+    | **Usou o NAP** | Ja utilizou o servico | Qualidade do atendimento, satisfacao, recomendacao |
     
     ---
     
-    ### 📊 **O que significam os números (0 a 10)**
+    ### 📊 **O que significam os indicadores (0 a 10)**
     
-    | Indicador | O que mede | Como calculamos |
-    |-----------|------------|-----------------|
-    | **Necessidade** | Alunos que sentem falta de apoio emocional/acadêmico | Média das respostas de quem respondeu as perguntas de necessidade |
-    | **Suporte** | Alunos que percebem que a faculdade oferece apoio | Média das respostas de quem respondeu as perguntas de suporte |
-    | **Gap** | Diferença entre necessidade e suporte | Necessidade - Suporte |
-    | **Intenção** | Disposição para usar o NAP | Média das respostas de quem respondeu as perguntas de intenção |
+    | Indicador | O que mede | Tipo | Onde aparece no dashboard |
+    |-----------|------------|------|---------------------------|
+    | **Necessidade** | Alunos que sentem falta de apoio | Score (media de 2 perguntas) | KPIs + Matriz + Scores |
+    | **Suporte** | Alunos que percebem apoio da faculdade | Pergunta unica | KPIs + Matriz + Scores |
+    | **Gap** | Diferenca entre necessidade e suporte | Calculo (Necessidade - Suporte) | KPIs apenas |
+    | **Intencao** | Disposicao para usar o NAP | Score (media de 3 perguntas) | KPIs + Matriz + Scores |
+    | **Conforto** | Alunos confortaveis para pedir ajuda | Pergunta unica | **Apenas na Matriz de Correlacao** |
+    | **Crenca** | Alunos que acreditam no servico | Pergunta unica | **Apenas na Matriz de Correlacao** |
+    
+    > **Explicacao:** 
+    > - `score_necessidade` = (Pergunta_Necessidade + Pergunta_Conforto) / 2
+    > - Conforto e Crenca aparecem EXCLUSIVAMENTE na Matriz de Correlacao (Bloco 1)
+    > - Eles nao tem KPIs proprios porque sao perguntas de apoio que compoem o score_necessidade
+    
+    ---
+    
+    ### 🔗 **O que significam as correlacoes (Bloco 1)**
+    
+    | Correlacao | O que mede | O que indica |
+    |------------|-----------|--------------|
+    | **Necessidade ↔ Conforto** | Quem precisa se sente confortavel para pedir ajuda? | Se baixa: alunos com vergonha/receio |
+    | **Necessidade ↔ Suporte** | Quem precisa percebe que a faculdade oferece apoio? | Se negativa: FALTA DE COMUNICACAO |
+    | **Necessidade ↔ Crenca** | Precisar de ajuda faz acreditar no servico? | Geralmente e neutro |
+    | **Conforto ↔ Suporte** | Ambiente acolhedor aumenta percepcao de suporte? | Se positiva: investir em acolhimento |
+    | **Conforto ↔ Crenca** | Conforto aumenta a credibilidade do NAP? | Se positiva: ambiente acolhedor funciona |
+    | **Suporte ↔ Crenca** | Perceber suporte faz acreditar no servico? | Se baixa: suporte visto como superficial |
     
     ---
     
     ### 📈 **Como interpretar os resultados**
     
-    | Situação | Significado | O que fazer |
+    | Situacao | Significado | O que fazer |
     |----------|-------------|-------------|
-    | **Gap positivo (+)** | Alunos precisam mais do que percebem que a faculdade oferece | Falta de comunicação sobre o serviço |
-    | **Gap negativo (-)** | Suporte excede a necessidade | Situação ideal - manter as ações |
-    | **Gap próximo de zero** | Necessidade e suporte estão alinhados | Equilíbrio bom, mas pode melhorar |
-    | **Alta necessidade (> 7)** | Muitos alunos reconhecem que precisam de apoio | Reforçar a oferta do serviço |
-    | **Baixo suporte (< 5)** | Alunos não percebem o apoio da faculdade | Campanha de divulgação urgente |
-    | **Alta intenção (> 7)** | Alunos querem usar o NAP | Facilitar o acesso e acolhimento |
+    | **Gap positivo (+)** | Alunos precisam mais do que percebem | Falta de comunicacao - divulgar mais |
+    | **Gap negativo (-)** | Suporte excede a necessidade | Situacao ideal - manter as acoes |
+    | **Necessidade alta (> 7)** | Muitos alunos reconhecem que precisam de apoio | Reforcar a oferta do servico |
+    | **Suporte baixo (< 5)** | Alunos nao percebem o apoio da faculdade | Campanha de divulgacao URGENTE |
+    | **Intencao alta (> 7)** | Alunos querem usar o NAP | Facilitar o acesso e acolhimento |
     
     ---
     
-    ### 🔍 **Como foi feita a análise**
+    ### 🔍 **Como foi feita a analise**
     
-    1. **Coleta de dados:** Formulário online (Google Forms) com fluxo condicional
+    1. **Coleta de dados:** Formulario online (Google Forms) com fluxo condicional
     2. **Tratamento dos dados:** Respostas anonimizadas e organizadas por grupo
-    3. **Cálculo dos scores:** Médias das respostas (0 a 10) para cada dimensão
-    4. **Correlações:** Análise de como as perguntas se relacionam dentro de cada bloco
-    5. **Filtros interativos:** Permite segmentar por campus, período, gênero, etc.
+    3. **Calculo dos scores:** Medias das respostas (0 a 10) para cada dimensao
+    4. **Correlacoes:** Analise de como as perguntas se relacionam dentro de cada bloco
+    5. **Filtros interativos:** Permite segmentar por campus, periodo, genero, etc.
     
     ---
     
     ### 💡 **Dica importante**
     
-    > As perguntas sobre **necessidade/suporte** foram respondidas por um grupo diferente das perguntas sobre **intenção/confiança** (fluxo condicional do Forms).  
-    > Por isso, **não calculamos correlação entre blocos diferentes** - apenas dentro de cada bloco.
+    > As perguntas sobre **necessidade/conforto/crenca/suporte** foram respondidas por um grupo de alunos.  
+    > As perguntas sobre **intencao/confianca** foram respondidas por outro grupo (fluxo condicional do Forms).  
+    > Por isso, **nao calculamos correlacao entre blocos diferentes** - apenas dentro de cada bloco.
     
     ---
     
     ### 📖 **Como navegar no dashboard**
     
-    1. **Filtros na lateral esquerda** → Selecione campus, período, gênero, semestre
-    2. **KPIs no topo** → Visão geral rápida dos principais indicadores
-    3. **Central de Alertas** → Problemas identificados automaticamente
-    4. **Matriz de Correlação** → Relações entre perguntas do mesmo bloco
-    5. **Funil de Adoção** → Quantos alunos em cada etapa da jornada
-    6. **Gráficos interativos** → Clique e descubra insights
+    1. **Filtros na lateral esquerda** -> Selecione campus, periodo, genero, semestre
+    2. **KPIs no topo** -> Visao geral rapida dos principais indicadores
+    3. **Central de Alertas** -> Problemas identificados automaticamente
+    4. **Matriz de Correlacao** -> Relacoes entre perguntas do mesmo bloco
+    5. **Funil de Adocao** -> Quantos alunos em cada etapa da jornada
+    6. **Graficos interativos** -> Clique e descubra insights
     """)
 
-st.markdown("---")
+
 
 # ============================================================
 # AVISOS
