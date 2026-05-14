@@ -49,32 +49,29 @@ if df.empty:
 st.error("❌ Não foi possível carregar os dados. Verifique o arquivo dados.csv")
 st.stop()
 
-# ============================================================
-# FUNÇÃO PARA GERAR HTML (RELATÓRIO) - VERSÃO SIMPLES
-# ============================================================
 def gerar_html_relatorio(df):
-necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
-suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
-gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
-intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
-pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
-pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
-pct_nao = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
-
-html = f"""
-<html>
-<body>
-<h1>NAP - Relatorio Executivo</h1>
-<p>Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-<p>Total: {len(df)} alunos</p>
-<p>Usaram o NAP: {pct_usou:.0f}%</p>
-<p>Necessidade: {necessidade:.1f}/10</p>
-<p>Suporte: {suporte:.1f}/10</p>
-<p>Gap: {gap:.1f}</p>
-</body>
-</html>
-"""
-return html
+    necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+    suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+    gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+    intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+    pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_nao = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    
+    html = f"""
+    <html>
+    <body>
+    <h1>NAP - Relatorio Executivo</h1>
+    <p>Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+    <p>Total: {len(df)} alunos</p>
+    <p>Usaram o NAP: {round(pct_usou)}%</p>
+    <p>Necessidade: {round(necessidade, 1)}/10</p>
+    <p>Suporte: {round(suporte, 1)}/10</p>
+    <p>Gap: {round(gap, 1)}</p>
+    </body>
+    </html>
+    """
+    return html
 
 # ============================================================
 # SIDEBAR
