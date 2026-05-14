@@ -311,19 +311,19 @@ st.markdown("---")
 st.success("✅ Dashboard completo com legendas explicativas!")
 
 with st.expander("📋 Resumo Executivo para Gestão"):
-st.markdown(f"""
-### Principais conclusoes:
-
-1. **Comunicacao é a prioridade maxima:** {pct_nao:.0f}% dos alunos desconhecem o NAP.
-2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas nao percebem que a faculdade oferece ({suporte:.1f}/10).
-3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.
-
-### Recomendacoes:
-
-- ✅ Campanha de divulgacao imediata
-- ✅ Comunicar claramente os servicos oferecidos
-- ✅ Coletar e divulgar depoimentos de alunos que usaram
-- ✅ Acompanhar evolucao do gap semestralmente
-""")
+    st.markdown(f"""
+    ### Principais conclusoes:
+    
+    1. **Comunicacao é a prioridade maxima:** {int(pct_nao)}% dos alunos desconhecem o NAP.
+    2. **Gap de {gap:.1f} pontos:** Alunos precisam de apoio ({necessidade:.1f}/10) mas nao percebem que a faculdade oferece ({suporte:.1f}/10).
+    3. **Quem usa, aprova:** As avaliacoes dos usuarios sao positivas.
+    
+    ### Recomendacoes:
+    
+    - ✅ Campanha de divulgacao imediata
+    - ✅ Comunicar claramente os servicos oferecidos
+    - ✅ Coletar e divulgar depoimentos de alunos que usaram
+    - ✅ Acompanhar evolucao do gap semestralmente
+    """)
 
 st.caption(f"📊 Dashboard atualizado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | Base: {len(df)} alunos")
