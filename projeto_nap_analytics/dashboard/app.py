@@ -185,7 +185,7 @@ with col8:
 # ============================================================
 # SESSÃO DE INTRODUÇÃO - EXPLICAÇÃO DO TRABALHO
 # ============================================================
-with st.expander("📖 **ENTENDA O QUE FOI FEITO NESTA ANÁLISE**", expanded=True):
+with st.expander("📖 **INTRODUÇÃO - ENTENDA O QUE FOI FEITO NESTA ANÁLISE**", expanded=True):
     st.markdown("""
     ### 🎯 **Objetivo da pesquisa**
     
