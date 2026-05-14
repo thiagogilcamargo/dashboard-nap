@@ -68,14 +68,48 @@ html = f"""
     <meta charset="UTF-8">
     <title>Relatório NAP</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
-        .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
-        h1 {{ color: #2c3e50; text-align: center; }}
-        h2 {{ color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
-        .metric-card {{ background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #3498db; }}
-        .metric-value {{ font-size: 24px; font-weight: bold; color: #2c3e50; }}
-        .warning {{ color: #e74c3c; }}
-        .footer {{ text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; }}
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }}
+        h1 {{
+            color: #2c3e50;
+            text-align: center;
+        }}
+        h2 {{
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }}
+        .metric-card {{
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }}
+        .metric-value {{
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }}
+        .warning {{
+            color: #e74c3c;
+        }}
+        .footer {{
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }}
     </style>
 </head>
 <body>
@@ -824,12 +858,10 @@ if 'sei a quem recorrer' in col.lower() or 'acessar' in col.lower():
 if col_info:
 dados = pd.to_numeric(df[col_info], errors='coerce').dropna()
 if len(dados) > 0:
-    # Quanto menos sabe, maior o impacto
     impacto_info = 10 - dados.mean()
-    esforco_info = 2  # Baixo esforço
+    esforco_info = 2
     problemas.append({"Problema": "Falta de informação", "Impacto": impacto_info, "Esforço": esforco_info})
 
-# Problema 2: Preconceito
 col_prec = None
 for col in df.columns:
 if 'preconceito' in col.lower() or 'estigma' in col.lower():
@@ -840,12 +872,10 @@ if col_prec:
 dados = pd.to_numeric(df[col_prec], errors='coerce').dropna()
 if len(dados) > 0:
     impacto_prec = dados.mean()
-    esforco_prec = 6  # Esforço médio-alto
+    esforco_prec = 6
     problemas.append({"Problema": "Preconceito/Estigma", "Impacto": impacto_prec, "Esforço": esforco_prec})
 
-# Problema 3: Gap
 if gap > 2:
-# Esforço dinâmico baseado na magnitude do gap
 if gap > 5:
     esforco_gap = 8
 elif gap > 3:
@@ -854,10 +884,9 @@ else:
     esforco_gap = 4
 problemas.append({"Problema": f"Gap de {gap:.1f} pontos", "Impacto": gap, "Esforço": esforco_gap})
 
-# Problema 4: Desconhecimento do NAP
 if pct_nao > 20:
-impacto_desc = pct_nao / 10  # Normalizado
-esforco_desc = 3  # Esforço baixo-médio
+impacto_desc = pct_nao / 10
+esforco_desc = 3
 problemas.append({"Problema": f"{pct_nao:.0f}% desconhecem NAP", "Impacto": impacto_desc, "Esforço": esforco_desc})
 
 if problemas:
@@ -872,7 +901,7 @@ st.plotly_chart(fig_prior, use_container_width=True)
 with st.expander("📖 Como interpretar este gráfico"):
     st.markdown("""
     - **Prioridade mais alta** = maior relação Impacto/Esforço
-    - **Falta de informação** tem alto impacto e baixo esforço → PRIORIDADE MÁXIMA
+    - **Falta de informação** tem alto impacto e baixo esforço -> PRIORIDADE MAXIMA
     - **Desconhecimento do NAP** requer campanha de divulgação
     - **Gap** é um problema estrutural que exige ação coordenada
     - **Preconceito** tem esforço alto (mudança cultural demora)
@@ -883,13 +912,12 @@ with st.expander("📖 Como interpretar este gráfico"):
 # ============================================================
 st.markdown("---")
 st.subheader("📊 Funil de Adoção")
-st.caption("🔍 **O que mostra?** Quantos alunos estão em cada etapa: desconhecem → conhecem mas não usam → usam.")
+st.caption("🔍 **O que mostra?** Quantos alunos estão em cada etapa: desconhecem -> conhecem mas não usam -> usam.")
 
 if 'Jornada' in df.columns:
 funil = df['Jornada'].value_counts().reset_index()
 funil.columns = ['Status', 'Quantidade']
 
-# Ordem lógica do funil
 ordem = ['Não conhece NAP', 'Conhece mas não usou', 'Usou NAP']
 funil['Status'] = pd.Categorical(funil['Status'], categories=ordem, ordered=True)
 funil = funil.sort_values('Status')
@@ -954,7 +982,6 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("---")
 st.success("✅ Dashboard completo com legendas explicativas!")
 
-# Resumo executivo
 with st.expander("📋 Resumo Executivo para Gestão"):
 st.markdown(f"""
 ### Principais conclusoes:
