@@ -179,182 +179,188 @@ with col8:
     st.metric("❌ Desconhecem", f"{pct_nao:.0f}%")
 
 # ============================================================
-# INTRODUÇÃO COMPLETA DO TRABALHO (ADICIONADA)
+# INTRODUÇÃO COMPLETA DO TRABALHO (VERSÃO PREMIUM)
 # ============================================================
-with st.expander("📖 **INTRODUÇÃO COMPLETA DO TRABALHO**", expanded=False):
-    st.markdown("""
-    # Introducao - Analise do NAP (Nucleo de Apoio Psicopedagogico)
 
-    ## Objetivo da pesquisa
-
-    Este dashboard apresenta os resultados de um questionario aplicado aos alunos para entender como eles enxergam o NAP.
-
-    A pesquisa buscou identificar:
-    - Quantos alunos conhecem, usaram ou desconhecem o servico
-    - Quais sao as principais necessidades de apoio emocional e academico
-    - Como os alunos percebem o suporte oferecido pela faculdade
-    - O que impacta a intencao de usar o NAP
-
-    ---
-
-    ## Quais perguntas foram feitas?
-
-    | Bloco | Pergunta | O que mede |
-    |-------|----------|------------|
-    | **Necessidade** | "Ja senti necessidade de apoio emocional durante a graduacao." | Se o aluno precisa de apoio |
-    | **Conforto** | "Eu me sentiria confortavel em procurar ajuda dentro da instituicao." | Se ele se sente a vontade para pedir ajuda |
-    | **Crenca** | "Acredito que servicos de apoio podem melhorar a experiencia academica." | Se ele acredita que funciona |
-    | **Suporte** | "Eu sinto que ha suporte suficiente para dificuldades emocionais na faculdade." | Se ele percebe que a faculdade oferece apoio |
-    | **Intencao** | "Eu ja pensei em utilizar o NAP em algum momento." | Se ele tem vontade de usar |
-    | **Confianca** | "Tenho confianca na confidencialidade do atendimento do NAP." | Se ele confia no sigilo |
-
-    ---
-
-    ## Onde cada pergunta aparece no dashboard?
-
-    | Pergunta | Aparece nos KPIs? | Aparece na Matriz de Correlacao? |
-    |----------|-------------------|----------------------------------|
-    | "Ja senti necessidade de apoio emocional..." | Sim (como Necessidade) | Sim (Bloco 1) |
-    | "Eu me sentiria confortavel em procurar ajuda..." | Nao | Sim (Bloco 1) |
-    | "Acredito que servicos de apoio podem melhorar..." | Nao | Sim (Bloco 1) |
-    | "Eu sinto que ha suporte suficiente..." | Sim (como Suporte) | Sim (Bloco 1) |
-    | "Eu ja pensei em utilizar o NAP..." | Sim (como Intencao) | Sim (Bloco 2) |
-    | "Tenho confianca na confidencialidade..." | Nao | Sim (Bloco 2) |
-
-    > **Por que Conforto e Crenca nao aparecem nos KPIs?**  
-    > Porque eles sao perguntas de apoio que compoem o score_necessidade. Eles aparecem APENAS na Matriz de Correlacao.
-
-    ---
-
-    ## Como os scores foram calculados?
-
-    Cada resposta vai de **0 a 10**. Os scores sao **medias** das perguntas de cada bloco:
-
-    | Score | Perguntas que compoem | Formula |
-    |-------|----------------------|---------|
-    | **score_necessidade** | Necessidade + Conforto | (Necessidade + Conforto) / 2 |
-    | **score_suporte** | Suporte | Valor unico da pergunta |
-    | **score_intencao** | Intencao + Confianca | (Intencao + Confianca) / 2 |
-    | **score_gap** | Diferenca entre necessidade e suporte | score_necessidade - score_suporte |
-
-    **Exemplo pratico:** Se um aluno respondeu:
-    - Necessidade = 8
-    - Conforto = 6
-    - Suporte = 4
-    - Intencao = 7
-    - Confianca = 9
-
-    Seus scores individuais seriam:
-    - score_necessidade = (8 + 6) / 2 = 7
-    - score_suporte = 4
-    - score_gap = 7 - 4 = 3
-    - score_intencao = (7 + 9) / 2 = 8
-
-    **Os numeros que voce ve no dashboard sao as MEDIAS desses scores para TODOS os alunos.**
-
-    ---
-
-    ## O que a Matriz de Correlacao mostra?
-
-    A matriz mostra como as perguntas se relacionam dentro de cada bloco.
-
-    **Bloco 1 (Necessidade, Conforto, Suporte, Crenca):**
-
-    | Correlacao | Se for positiva | Se for negativa |
-    |------------|-----------------|-----------------|
-    | **Necessidade ↔ Suporte** | Quem precisa percebe que tem apoio | Quem mais precisa, menos percebe apoio (ALERTA) |
-    | **Conforto ↔ Crenca** | Quem se sente confortavel acredita mais no servico (BOM SINAL) | - |
-    | **Necessidade ↔ Conforto** | Quem precisa se sente confortavel para pedir ajuda | Quem precisa tem vergonha/receio |
-
-    **Bloco 2 (Intencao, Confianca):**
-
-    | Correlacao | Significado |
-    |------------|-------------|
-    | **Intencao ↔ Confianca** | Quem confia no sigilo tem mais intencao de usar o NAP |
-
-    ---
-
-    ## Como dividimos os alunos?
-
-    Com base na resposta a pergunta sobre o NAP, dividimos os alunos em 3 grupos:
-
-    | Grupo | O que significa |
-    |-------|-----------------|
-    | **Nao conhece o NAP** | Nunca ouviu falar |
-    | **Conhece mas nao usou** | Sabe que existe, mas nunca procurou |
-    | **Usou o NAP** | Ja utilizou o servico |
-
-    ---
-
-    ## O que significam os numeros do dashboard
-
-    | Numero | Como e calculado | O que significa | O que e BOM? |
-    |--------|------------------|-----------------|--------------|
-    | **Total** | Contagem de respostas | Quantos alunos responderam | - |
-    | **Ja usaram** | (Usaram NAP / Total) * 100 | Porcentagem que ja usou o NAP | Quanto maior, melhor |
-    | **Necessidade** | Media do score_necessidade | O quanto os alunos PRECISAM de apoio (0 a 10) | Baixo (menos de 5) |
-    | **Suporte** | Media do score_suporte | O quanto eles PERCEBEM que a faculdade oferece apoio (0 a 10) | Alto (mais de 7) |
-    | **Gap** | Necessidade - Suporte | Diferenca entre necessidade e suporte | Negativo ou zero |
-    | **Intencao** | Media do score_intencao | O quanto gostariam de usar o NAP (0 a 10) | Alto (mais de 7) |
-    | **Conhecem** | (Conhece mas nao usou / Total) * 100 | Porcentagem que conhece mas nao usou | - |
-    | **Desconhecem** | (Nao conhece / Total) * 100 | Porcentagem que nunca ouviu falar | Baixo (menos de 20%) |
-
-    ---
-
-    ## Como interpretar o Gap?
-
-    | Situacao | Calculo | Resultado | Significado |
-    |----------|---------|-----------|-------------|
-    | Precisa muito, nao percebe apoio | 8 - 3 = | Gap +5 | PROBLEMA - Falta comunicacao |
-    | Precisa pouco, percebe muito apoio | 3 - 8 = | Gap -5 | IDEAL - Faculdade esta atendendo bem |
-    | Precisa e percebe na mesma medida | 6 - 6 = | Gap 0 | OK - Equilibrado |
-
-    ---
-
-    ## O que e BOM e o que e ALERTA?
-
-    | Indicador | BOM (Verde) | ALERTA (Vermelho) |
-    |-----------|-------------|-------------------|
-    | **Necessidade** | Abaixo de 5 | Acima de 7 |
-    | **Suporte** | Acima de 7 | Abaixo de 5 |
-    | **Gap** | Negativo ou zero | Acima de 3 |
-    | **Intencao** | Acima de 7 | Abaixo de 5 |
-    | **Desconhecem** | Abaixo de 20% | Acima de 40% |
-
-    ---
-
-    ## Como usar o dashboard
-
-    1. **Filtros na lateral esquerda** -> Selecione campus, periodo, genero, semestre
-    2. **Numeros no topo** -> Visao geral dos indicadores (atualizam com filtros)
-    3. **Central de Alertas** -> Problemas identificados automaticamente
-    4. **Matriz de Correlacao** -> Mostra como as perguntas se relacionam dentro de cada bloco
-    5. **Funil de Adocao** -> Quantos alunos em cada etapa da jornada
-    6. **Analise de Qualidade** -> Avaliacao de quem USOU o NAP (atendimento, recomendacao)
-    7. **Graficos** -> Comparacoes entre campi, evolucao por semestre, perfil dos alunos
-
-    ---
-
-    ## Sobre os dados e privacidade
-
-    - **Fluxo condicional do Forms:** Quem respondeu um bloco nao respondeu os outros. Por isso algumas perguntas tem menos respostas.
-    - **Medias calculadas apenas com quem respondeu:** Os campos vazios sao ignorados automaticamente.
-    - **Dados anonimizados:** E-mails e dados pessoais foram removidos.
-    - **Ninguem consegue identificar quem respondeu o que.**
-
-    ---
-
-    ## Resumo rapido para consulta
-
-    | Se voce quer saber... | Olhe para... | O que e bom... |
-    |-----------------------|---------------|----------------|
-    | Se os alunos precisam de apoio | **Necessidade** | Numero baixo (< 5) |
-    | Se eles percebem que a faculdade ajuda | **Suporte** | Numero alto (> 7) |
-    | Se a comunicacao esta boa | **Gap** | Numero negativo ou zero |
-    | Se eles querem usar o NAP | **Intencao** | Numero alto (> 7) |
-    | Se a divulgacao esta funcionando | **% Desconhecem** | Numero baixo (< 20%) |
-    | Se quem usou aprovou | **Analise de Qualidade** | Numeros altos (> 8) |
-    """)
+with st.expander("📖 **INTRODUÇÃO E METODOLOGIA**", expanded=False):
+    
+    # Status da atualização
+    st.caption(f"📊 Última atualização dos dados: {datetime.now().strftime('%d/%m/%Y')}")
+    
+    # Usando tabs para organizar melhor
+    tab_intro, tab_metodologia, tab_indicadores, tab_correlacao, tab_interpretacao, tab_privacidade = st.tabs([
+        "📌 Introdução", "🔬 Metodologia", "📊 Indicadores", "🔗 Correlação", "📖 Interpretação", "🔒 Privacidade"
+    ])
+    
+    with tab_intro:
+        st.markdown("""
+        ## Sobre esta pesquisa
+        
+        Este dashboard apresenta os resultados de um questionário aplicado aos alunos para compreender como eles percebem o NAP (Núcleo de Apoio Psicopedagógico).
+        
+        **Objetivos da pesquisa:**
+        - Identificar quantos alunos conhecem, utilizam ou desconhecem o serviço
+        - Avaliar as principais necessidades de apoio emocional e acadêmico
+        - Analisar como os alunos percebem o suporte oferecido pela faculdade
+        - Investigar fatores que impactam a intenção de uso do NAP
+        
+        **Como ler este dashboard em 30 segundos:**
+        1. Observe os indicadores no topo da tela
+        2. Analise o Gap (diferença entre necessidade e suporte percebido)
+        3. Verifique os alertas automáticos
+        4. Compare os resultados entre campi
+        5. Analise a intenção de uso do NAP
+        
+        > **Indicadores de situação:**  
+        > 🔵 Adequado | 🟡 Atenção | 🔴 Crítico
+        """)
+    
+    with tab_metodologia:
+        st.markdown("""
+        ## Metodologia da Análise
+        
+        **Classificação dos alunos:**
+        
+        Com base na resposta à pergunta sobre o NAP, os participantes foram divididos em 3 grupos:
+        
+        | Grupo | Descrição |
+        |-------|-----------|
+        | **Não conhece o NAP** | Nunca ouviu falar do serviço |
+        | **Conhece mas não usou** | Sabe da existência, mas nunca acessou |
+        | **Usou o NAP** | Já utilizou o serviço |
+        
+        **Perguntas do questionário (construtos mensurados):**
+        
+        | Bloco | Pergunta | Construto mensurado |
+        |-------|----------|---------------------|
+        | **Necessidade** | "Já senti necessidade de apoio emocional durante a graduação." | Demanda por apoio |
+        | **Conforto** | "Eu me sentiria confortável em procurar ajuda dentro da instituição." | Acolhimento percebido |
+        | **Crença** | "Acredito que serviços de apoio podem melhorar a experiência acadêmica." | Expectativa de eficácia |
+        | **Suporte** | "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade." | Percepção institucional |
+        | **Intenção** | "Eu já pensei em utilizar o NAP em algum momento." | Propensão ao uso |
+        | **Confiança** | "Tenho confiança na confidencialidade do atendimento do NAP." | Credibilidade do serviço |
+        
+        **Limitação metodológica:** Os resultados representam percepções subjetivas dos respondentes e não constituem diagnóstico psicológico institucional.
+        """)
+    
+    with tab_indicadores:
+        st.markdown("""
+        ## Indicadores e Scores
+        
+        **Como os scores foram calculados:**
+        
+        Cada resposta varia de **0 a 10**. Os scores representam médias das perguntas de cada construto:
+        
+        | Score | Composição | Fórmula |
+        |-------|------------|---------|
+        | **Necessidade** | Necessidade + Conforto | (Perg1 + Perg2) / 2 |
+        | **Suporte** | Suporte | Valor único da pergunta |
+        | **Intenção** | Intenção + Confiança | (Perg1 + Perg2) / 2 |
+        | **Gap** | Diferença | Necessidade - Suporte |
+        
+        **Exemplo prático de cálculo:**
+        
+        | Indicador | Valor | Cálculo | Resultado |
+        |-----------|-------|---------|-----------|
+        | Necessidade | 8 | (8 + 6) / 2 | 7 |
+        | Conforto | 6 | - | - |
+        | Suporte | 4 | - | 4 |
+        | Intenção | 7 | (7 + 9) / 2 | 8 |
+        | Confiança | 9 | - | - |
+        | Gap | - | 7 - 4 | 3 |
+        
+        **Os números exibidos no dashboard são as MÉDIAS destes scores para todos os respondentes.**
+        
+        **Onde cada pergunta aparece no dashboard:**
+        
+        | Pergunta | Aparece nos indicadores? | Aparece na correlação? |
+        |----------|-------------------------|------------------------|
+        | Necessidade | Sim | Sim |
+        | Conforto | Não | Sim |
+        | Crença | Não | Sim |
+        | Suporte | Sim | Sim |
+        | Intenção | Sim | Sim |
+        | Confiança | Não | Sim |
+        """)
+    
+    with tab_correlacao:
+        st.markdown("""
+        ## Análise de Correlação
+        
+        **O que mede:** A correlação indica como duas perguntas se relacionam estatisticamente.
+        
+        **Interpretação dos valores:**
+        
+        | Valor de correlação | Intensidade | Significado |
+        |--------------------|-------------|--------------|
+        | 0,71 a 1,00 | Forte positiva | As perguntas tendem a aumentar juntas |
+        | 0,31 a 0,70 | Moderada positiva | Relação consistente, não perfeita |
+        | 0,00 a 0,30 | Fraca positiva | Relação pequena ou inexistente |
+        | -0,01 a -0,30 | Fraca negativa | Relação inversa pequena |
+        | -0,31 a -0,70 | Moderada negativa | Uma aumenta enquanto a outra diminui moderadamente |
+        | -0,71 a -1,00 | Forte negativa | Relação inversa consistente |
+        
+        > **⚠️ Importante:** Correlação NÃO implica causalidade. Indica apenas associação entre variáveis.
+        
+        **Correlações do Bloco 1 (Necessidade, Conforto, Suporte, Crença):**
+        
+        | Correlação | Interpretação |
+        |------------|---------------|
+        | Necessidade ↔ Suporte | Se negativa: alunos com maior necessidade percebem menos suporte (indicativo de lacuna comunicacional) |
+        | Conforto ↔ Crença | Se positiva: ambientes acolhedores estão associados a maior credibilidade percebida do serviço |
+        | Necessidade ↔ Conforto | Se baixa: alunos que demandam apoio podem apresentar receio em buscá-lo |
+        
+        **Correlações do Bloco 2 (Intenção, Confiança):**
+        
+        | Correlação | Interpretação |
+        |------------|---------------|
+        | Intenção ↔ Confiança | Se positiva: confiança no sigilo está associada a maior disposição para utilizar o serviço |
+        """)
+        st.info("ℹ️ Correlação não implica causalidade. Os valores indicam associação entre variáveis, não relação de causa e efeito.")
+    
+    with tab_interpretacao:
+        st.markdown("""
+        ## Interpretação dos Resultados
+        
+        **Significado do Gap:**
+        
+        | Cenário | Resultado | Significado analítico |
+        |---------|-----------|----------------------|
+        | Necessidade > Suporte | Gap positivo | Indica possível deficiência na percepção de suporte institucional |
+        | Necessidade < Suporte | Gap negativo | Percepção de suporte institucional superior à necessidade declarada (cenário desejável) |
+        | Necessidade ≈ Suporte | Gap próximo de zero | Percepção de suporte alinhada à necessidade declarada |
+        
+        **Faixas de referência:**
+        
+        | Indicador | 🔵 Adequado | 🟡 Atenção | 🔴 Crítico |
+        |-----------|-------------|------------|------------|
+        | Necessidade | < 5 | 5 a 7 | > 7 |
+        | Suporte | > 7 | 5 a 7 | < 5 |
+        | Gap | Negativo ou zero | 0 a 3 | > 3 |
+        | Intenção | > 7 | 5 a 7 | < 5 |
+        | Desconhecem NAP | < 20% | 20% a 40% | > 40% |
+        
+        > **Nota metodológica:** Necessidade elevada pode indicar maior conscientização emocional ou período acadêmico crítico, não sendo necessariamente um indicador negativo isoladamente.
+        """)
+    
+    with tab_privacidade:
+        st.markdown("""
+        ## Sobre os Dados e Privacidade
+        
+        **Tratamento dos dados:**
+        - Fluxo condicional do Google Forms: participantes responderam apenas aos blocos pertinentes ao seu perfil
+        - As médias consideram exclusivamente as respostas válidas de cada pergunta
+        - Campos não aplicáveis ou em branco são automaticamente ignorados nos cálculos
+        
+        **Proteção de dados:**
+        - Todas as respostas foram anonimizadas
+        - Endereços de e-mail e demais informações pessoais foram removidos
+        - Não é possível identificar individualmente os respondentes
+        
+        **Limitação da pesquisa:**
+        Os resultados refletem percepções subjetivas dos participantes no momento da coleta e não devem ser generalizados como diagnóstico institucional definitivo.
+        """)
+        st.info("🔒 Este dashboard está em conformidade com as diretrizes de proteção de dados e anonimização dos respondentes.")
 # ============================================================
 # AVISOS
 # ============================================================
