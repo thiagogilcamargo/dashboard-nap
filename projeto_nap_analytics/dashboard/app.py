@@ -179,7 +179,7 @@ with col8:
     st.metric("❌ Desconhecem", f"{pct_nao:.0f}%")
 
 # ============================================================
-# INTRODUÇÃO COMPLETA DO TRABALHO (VERSÃO PREMIUM)
+# INTRODUÇÃO COMPLETA DO TRABALHO (VERSÃO FINAL)
 # ============================================================
 
 with st.expander("📖 **INTRODUÇÃO E METODOLOGIA**", expanded=False):
@@ -231,14 +231,17 @@ with st.expander("📖 **INTRODUÇÃO E METODOLOGIA**", expanded=False):
         
         **Perguntas do questionário (construtos mensurados):**
         
-        | Bloco | Pergunta | Construto mensurado |
-        |-------|----------|---------------------|
-        | **Necessidade** | "Já senti necessidade de apoio emocional durante a graduação." | Demanda por apoio |
-        | **Conforto** | "Eu me sentiria confortável em procurar ajuda dentro da instituição." | Acolhimento percebido |
-        | **Crença** | "Acredito que serviços de apoio podem melhorar a experiência acadêmica." | Expectativa de eficácia |
-        | **Suporte** | "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade." | Percepção institucional |
-        | **Intenção** | "Eu já pensei em utilizar o NAP em algum momento." | Propensão ao uso |
-        | **Confiança** | "Tenho confiança na confidencialidade do atendimento do NAP." | Credibilidade do serviço |
+        | Bloco | Pergunta original | Nome no gráfico | Construto mensurado |
+        |-------|-------------------|-----------------|---------------------|
+        | **Necessidade** | "Já senti necessidade de apoio emocional durante a graduação." | Necessidade | Demanda por apoio |
+        | **Conforto** | "Eu me sentiria confortável em procurar ajuda dentro da instituição." | Conforto | Acolhimento percebido |
+        | **Crença** | "Acredito que serviços de apoio podem melhorar a experiência acadêmica." | Crença | Expectativa de eficácia |
+        | **Suporte** | "Eu sinto que há suporte suficiente para dificuldades emocionais na faculdade." | Suporte | Percepção institucional |
+        | **Intenção** | "Eu já pensei em utilizar o NAP em algum momento." | Intenção | Propensão ao uso |
+        | **Confiança** | "Tenho confiança na confidencialidade do atendimento do NAP." | Confiança | Credibilidade do serviço |
+        | **Acesso** | "Eu sei como acessar os serviços oferecidos pelo NAP." | Acesso | Conhecimento operacional |
+        
+        > **Nota sobre nomenclatura:** Nos gráficos e matrizes de correlação, as perguntas são abreviadas para facilitar a leitura (coluna "Nome no gráfico").
         
         **Limitação metodológica:** Os resultados representam percepções subjetivas dos respondentes e não constituem diagnóstico psicológico institucional.
         """)
@@ -251,36 +254,39 @@ with st.expander("📖 **INTRODUÇÃO E METODOLOGIA**", expanded=False):
         
         Cada resposta varia de **0 a 10**. Os scores representam médias das perguntas de cada construto:
         
-        | Score | Composição | Fórmula |
-        |-------|------------|---------|
-        | **Necessidade** | Necessidade + Conforto | (Perg1 + Perg2) / 2 |
-        | **Suporte** | Suporte | Valor único da pergunta |
-        | **Intenção** | Intenção + Confiança | (Perg1 + Perg2) / 2 |
-        | **Gap** | Diferença | Necessidade - Suporte |
+        | Score | Perguntas que compõem (nomes originais) | Perguntas no gráfico | Fórmula |
+        |-------|------------------------------------------|---------------------|---------|
+        | **Necessidade** | Necessidade + Conforto + Crença | Necessidade, Conforto, Crença | (Perg1 + Perg2 + Perg3) / 3 |
+        | **Suporte** | Suporte | Suporte | Valor único da pergunta |
+        | **Intenção** | Intenção + Confiança + Acesso | Intenção, Confiança, Acesso | (Perg1 + Perg2 + Perg3) / 3 |
+        | **Gap** | Diferença | Necessidade - Suporte | Necessidade - Suporte |
         
         **Exemplo prático de cálculo:**
         
         | Indicador | Valor | Cálculo | Resultado |
         |-----------|-------|---------|-----------|
-        | Necessidade | 8 | (8 + 6) / 2 | 7 |
+        | Necessidade | 8 | (8 + 6 + 7) / 3 | 7,0 |
         | Conforto | 6 | - | - |
-        | Suporte | 4 | - | 4 |
-        | Intenção | 7 | (7 + 9) / 2 | 8 |
+        | Crença | 7 | - | - |
+        | Suporte | 4 | - | 4,0 |
+        | Intenção | 7 | (7 + 9 + 5) / 3 | 7,0 |
         | Confiança | 9 | - | - |
-        | Gap | - | 7 - 4 | 3 |
+        | Acesso | 5 | - | - |
+        | Gap | - | 7,0 - 4,0 | 3,0 |
         
         **Os números exibidos no dashboard são as MÉDIAS destes scores para todos os respondentes.**
         
         **Onde cada pergunta aparece no dashboard:**
         
-        | Pergunta | Aparece nos indicadores? | Aparece na correlação? |
-        |----------|-------------------------|------------------------|
-        | Necessidade | Sim | Sim |
-        | Conforto | Não | Sim |
-        | Crença | Não | Sim |
-        | Suporte | Sim | Sim |
-        | Intenção | Sim | Sim |
-        | Confiança | Não | Sim |
+        | Nome no gráfico | Aparece nos KPIs? | Aparece na Correlação? | Faz parte de qual score? |
+        |-----------------|-------------------|------------------------|--------------------------|
+        | Necessidade | Sim (como parte do score) | Sim (Bloco 1) | score_necessidade |
+        | Conforto | Não | Sim (Bloco 1) | score_necessidade |
+        | Crença | Não | Sim (Bloco 1) | score_necessidade |
+        | Suporte | Sim (como Suporte) | Sim (Bloco 1) | score_suporte |
+        | Intenção | Sim (como parte do score) | Sim (Bloco 2) | score_intencao |
+        | Confiança | Não | Sim (Bloco 2) | score_intencao |
+        | Acesso | Não | Sim (Bloco 2) | score_intencao |
         """)
     
     with tab_correlacao:
@@ -310,11 +316,12 @@ with st.expander("📖 **INTRODUÇÃO E METODOLOGIA**", expanded=False):
         | Conforto ↔ Crença | Se positiva: ambientes acolhedores estão associados a maior credibilidade percebida do serviço |
         | Necessidade ↔ Conforto | Se baixa: alunos que demandam apoio podem apresentar receio em buscá-lo |
         
-        **Correlações do Bloco 2 (Intenção, Confiança):**
+        **Correlações do Bloco 2 (Intenção, Confiança, Acesso):**
         
         | Correlação | Interpretação |
         |------------|---------------|
         | Intenção ↔ Confiança | Se positiva: confiança no sigilo está associada a maior disposição para utilizar o serviço |
+        | Intenção ↔ Acesso | Se positiva: conhecimento sobre como acessar está associado a maior intenção de uso |
         """)
         st.info("ℹ️ Correlação não implica causalidade. Os valores indicam associação entre variáveis, não relação de causa e efeito.")
     
