@@ -1,83 +1,349 @@
+# dashboard/app.py
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import numpy as np
+import sys
+import os
+from datetime import datetime
+import base64
 
-| Situação | Contas | Resultado | Significado |
-|----------|--------|-----------|-------------|
-| Precisa muito, mas não percebe apoio | 8 - 3 = | **Gap +5** | ⚠️ PROBLEMA - Falta comunicação |
-| Precisa pouco e percebe muito apoio | 3 - 8 = | **Gap -5** | ✅ IDEAL - Faculdade está atendendo bem |
-| Precisa e percebe na mesma medida | 6 - 6 = | **Gap 0** | OK - Equilibrado |
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
----
+from dashboard.utils import (
+    carregar_dados_brutos,
+    aplicar_jornada,
+    calcular_scores,
+    limpar_colunas
+)
 
-## 🟢 O que é um BOM resultado?
+st.set_page_config(page_title="NAP Analytics", layout="wide")
 
-- **Suporte alto** (acima de 7) → Os alunos percebem que a faculdade oferece apoio
-- **Gap negativo** (Suporte maior que Necessidade) → Situação ideal
-- **Intenção alta** (acima de 7) → Os alunos querem usar o NAP
-- **Poucos desconhecem o NAP** (menos de 20%) → A divulgação está boa
-- **Crença alta** (acima de 8) → Os alunos acreditam que o serviço funciona
+@st.cache_data
+def carregar_e_processar():
+    df = carregar_dados_brutos()
+    df = aplicar_jornada(df)
+    df = calcular_scores(df)
+    df = limpar_colunas(df)
+    return df
 
-## 🔴 O que é um resultado de ALERTA?
+df = carregar_e_processar()
 
-- **Necessidade alta** (acima de 7) → Muitos alunos precisam de apoio
-- **Suporte baixo** (abaixo de 5) → Os alunos não percebem o apoio da faculdade
-- **Gap positivo** (acima de 3) → Falta de comunicação sobre o NAP
-- **Muitos desconhecem o NAP** (mais de 40%) → Divulgação está fraca
+# ============================================================
+# FUNÇÃO PARA GERAR HTML (RELATÓRIO)
+# ============================================================
+def gerar_html_relatorio(df):
+    necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+    suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+    gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+    intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
+    pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+    pct_nao = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Relatório NAP</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
+            h1 {{ color: #2c3e50; text-align: center; }}
+            h2 {{ color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+            .metric-card {{ background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #3498db; }}
+            .metric-value {{ font-size: 24px; font-weight: bold; color: #2c3e50; }}
+            .warning {{ color: #e74c3c; }}
+            .footer {{ text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🧠 NAP - Relatório Executivo</h1>
+            <p style="text-align: center">Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+            <div class="metric-card"><strong>Total:</strong> {len(df)} alunos</div>
+            <div class="metric-card"><strong>Usaram o NAP:</strong> {pct_usou:.0f}%</div>
+            <div class="metric-card"><strong>Necessidade:</strong> {necessidade:.1f}/10</div>
+            <div class="metric-card"><strong>Suporte:</strong> {suporte:.1f}/10</div>
+            <div class="metric-card"><strong>Gap:</strong> {gap:.1f}</div>
+            <div class="footer">Relatório gerado automaticamente</div>
+        </div>
+    </body>
+    </html>
+    """
+    return html
 
----
+# ============================================================
+# SIDEBAR
+# ============================================================
+st.sidebar.title("🎛️ Filtros")
+st.sidebar.markdown("---")
 
-## 🔗 O que são as correlações?
+if 'Campus' in df.columns:
+    campus_opcoes = ['Todos'] + sorted(df['Campus'].dropna().unique().tolist())
+    campus_selecionado = st.sidebar.selectbox("🏢 Campus", campus_opcoes)
+    if campus_selecionado != 'Todos':
+        df = df[df['Campus'] == campus_selecionado]
 
-A **Matriz de Correlação** mostra se duas perguntas andam juntas ou separadas.
+if 'Período' in df.columns:
+    periodo_opcoes = ['Todos'] + sorted(df['Período'].dropna().unique().tolist())
+    periodo_selecionado = st.sidebar.selectbox("🌞 Período", periodo_opcoes)
+    if periodo_selecionado != 'Todos':
+        df = df[df['Período'] == periodo_selecionado]
 
-| Correlação | Se for negativa | Se for positiva |
-|------------|-----------------|-----------------|
-| **Necessidade ↔ Suporte** | Quem mais precisa é quem menos percebe apoio → FALTA DE COMUNICAÇÃO | Quem precisa percebe que tem apoio → BOM |
-| **Conforto ↔ Crença** | - | Quem se sente confortável acredita mais no serviço → ACOLHIMENTO FUNCIONA |
+if 'Faixa Etária' in df.columns:
+    idade_opcoes = ['Todas'] + sorted(df['Faixa Etária'].dropna().unique().tolist())
+    idade_selecionada = st.sidebar.selectbox("📅 Faixa Etária", idade_opcoes)
+    if idade_selecionada != 'Todas':
+        df = df[df['Faixa Etária'] == idade_selecionada]
 
-**Exemplo prático:** Se a correlação entre Necessidade e Suporte for negativa, isso significa que o serviço existe mas os alunos não estão sabendo. A solução é **melhorar a comunicação** sobre o NAP.
+if 'Gênero' in df.columns:
+    generos = df['Gênero'].dropna().unique().tolist()
+    genero_opcoes = ['Todos'] + sorted(generos)
+    genero_selecionado = st.sidebar.selectbox("👥 Gênero", genero_opcoes)
+    if genero_selecionado != 'Todos':
+        df = df[df['Gênero'] == genero_selecionado]
 
----
+if 'Semestre' in df.columns:
+    semestre_opcoes = ['Todos'] + sorted(df['Semestre'].dropna().unique().tolist())
+    semestre_selecionado = st.sidebar.selectbox("📚 Semestre", semestre_opcoes)
+    if semestre_selecionado != 'Todos':
+        df = df[df['Semestre'] == semestre_selecionado]
 
-## 📖 Como usar o dashboard
+if 'Jornada' in df.columns:
+    status_opcoes = ['Todos'] + sorted(df['Jornada'].dropna().unique().tolist())
+    status_selecionado = st.sidebar.selectbox("🔄 Status no NAP", status_opcoes)
+    if status_selecionado != 'Todos':
+        df = df[df['Jornada'] == status_selecionado]
 
-1. **Filtros na lateral esquerda** → Selecione campus, período, gênero, semestre para focar em grupos específicos
+st.sidebar.markdown("---")
 
-2. **Números no topo** → Visão geral dos principais indicadores (se você aplicou filtros, eles se atualizam)
+# Exportar Relatório HTML
+html_report = gerar_html_relatorio(df)
+b64 = base64.b64encode(html_report.encode()).decode()
+href = f'<a href="data:text/html;base64,{b64}" download="relatorio_nap.html" style="text-decoration: none;"><button style="background-color: #e74c3c; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">📄 Relatório</button></a>'
+st.sidebar.markdown(href, unsafe_allow_html=True)
 
-3. **Central de Alertas** → O sistema já identifica automaticamente se há problemas
+# Exportar CSV
+csv = df.to_csv(index=False).encode('utf-8')
+st.sidebar.download_button(
+    label="📥 Baixar dados (CSV)",
+    data=csv,
+    file_name=f"nap_dados_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+    mime="text/csv",
+)
 
-4. **Matriz de Correlação** → Mostra a relação entre as perguntas (vermelho = andam juntas, azul = se opõem)
+st.sidebar.caption(f"📊 {len(df)} registros")
 
-5. **Análise de Qualidade** → Avaliação de quem USOU o NAP (atendimento, recomendação, etc.)
+# ============================================================
+# DASHBOARD
+# ============================================================
+st.title("🧠 NAP — Núcleo de Apoio Psicopedagógico")
+st.markdown("### Painel de Jornada e Experiência do Aluno")
+st.markdown("---")
 
-6. **Gráficos** → Comparações entre campi, evolução por semestre, perfil dos alunos
+# ============================================================
+# KPIs
+# ============================================================
+st.subheader("📊 Visão Geral")
 
----
+necessidade = df['score_necessidade'].mean() if 'score_necessidade' in df.columns else 0
+suporte = df['score_suporte'].mean() if 'score_suporte' in df.columns else 0
+gap = df['score_gap'].mean() if 'score_gap' in df.columns else 0
+intencao = df['score_intencao'].mean() if 'score_intencao' in df.columns else 0
 
-## 🔒 Sobre privacidade
+pct_usou = (df['Jornada'] == 'Usou NAP').mean() * 100 if 'Jornada' in df.columns else 0
+pct_conhece = (df['Jornada'] == 'Conhece mas não usou').mean() * 100 if 'Jornada' in df.columns else 0
+pct_nao = (df['Jornada'] == 'Não conhece NAP').mean() * 100 if 'Jornada' in df.columns else 0
 
-- Todas as respostas foram **anonimizadas**
-- E-mails e dados pessoais foram **removidos**
-- Ninguém consegue identificar quem respondeu o quê
+col1, col2, col3, col4 = st.columns(4)
+col5, col6, col7, col8 = st.columns(4)
 
----
+with col1:
+    st.metric("📋 Total", len(df))
+with col2:
+    st.metric("✅ Já usaram", f"{pct_usou:.0f}%")
+with col3:
+    st.metric("🎯 Necessidade", f"{necessidade:.1f}/10")
+with col4:
+    st.metric("🏫 Suporte", f"{suporte:.1f}/10")
+with col5:
+    st.metric("📊 Gap", f"{gap:.1f}")
+with col6:
+    st.metric("🎯 Intenção", f"{intencao:.1f}/10")
+with col7:
+    st.metric("👀 Conhecem", f"{pct_conhece:.0f}%")
+with col8:
+    st.metric("❌ Desconhecem", f"{pct_nao:.0f}%")
 
-## 🎯 Resumo rápido
+# ============================================================
+# INTRODUÇÃO COMPLETA DO TRABALHO (SEM EMOJIS PROBLEMATICOS)
+# ============================================================
+with st.expander("📖 INTRODUCAO COMPLETA DO TRABALHO", expanded=False):
+    st.markdown("""
+    # Introducao - Analise do NAP (Nucleo de Apoio Psicopedagogico)
 
-| Se você quer saber... | Olhe para... | O que é bom... |
-|-----------------------|---------------|----------------|
-| Se os alunos precisam de apoio | **Necessidade** | Número baixo (< 5) |
-| Se eles percebem que a faculdade ajuda | **Suporte** | Número alto (> 7) |
-| Se a comunicação está boa | **Gap** | Número negativo ou zero |
-| Se eles querem usar o NAP | **Intenção** | Número alto (> 7) |
-| Se a divulgação está funcionando | **% Desconhecem** | Número baixo (< 20%) |
-| Se quem usou aprovou | **Análise de Qualidade** | Números altos (> 8) |
+    ## Objetivo da pesquisa
 
----
+    Este dashboard apresenta os resultados de um questionario aplicado aos alunos para entender como eles enxergam o NAP (Nucleo de Apoio Psicopedagogico).
 
-## ✅ Conclusão
+    A pesquisa buscou identificar:
+    - Quantos alunos conhecem, usaram ou desconhecem o servico
+    - Quais sao as principais necessidades de apoio emocional e academico
+    - Como os alunos percebem o suporte oferecido pela faculdade
+    - O que impacta a intencao de usar o NAP
 
-Este dashboard foi construído para facilitar a visualização e interpretação dos dados coletados. Com ele, é possível identificar pontos fortes e fracos do NAP, além de direcionar ações para melhorar o serviço e sua comunicação com os alunos.
-""")
+    ---
+
+    ## Quais perguntas foram feitas?
+
+    O questionario continha perguntas sobre varios aspectos do apoio aos alunos. As principais foram:
+
+    | Bloco | Pergunta | O que mede |
+    |-------|----------|------------|
+    | **Necessidade** | "Ja senti necessidade de apoio emocional durante a graduacao." | Se o aluno precisa de apoio |
+    | **Conforto** | "Eu me sentiria confortavel em procurar ajuda dentro da instituicao." | Se ele se sente a vontade para pedir ajuda |
+    | **Crenca** | "Acredito que servicos de apoio podem melhorar a experiencia academica." | Se ele acredita que funciona |
+    | **Suporte** | "Eu sinto que ha suporte suficiente para dificuldades emocionais na faculdade." | Se ele percebe que a faculdade oferece apoio |
+    | **Intencao** | "Eu ja pensei em utilizar o NAP em algum momento." | Se ele tem vontade de usar |
+    | **Confianca** | "Tenho confianca na confidencialidade do atendimento do NAP." | Se ele confia no sigilo |
+    | **Qualidade** | "O atendimento do NAP atendeu as minhas expectativas." | Se quem usou aprovou (so para quem usou) |
+
+    ---
+
+    ## Como dividimos os alunos?
+
+    Com base na resposta a pergunta: *"Qual opcao melhor representa voce em relacao ao NAP?"*, dividimos os alunos em 3 grupos:
+
+    | Grupo | O que significa | Quais perguntas respondeu |
+    |-------|-----------------|---------------------------|
+    | **Nao conhece o NAP** | Nunca ouviu falar | So as perguntas basicas (Necessidade, Suporte) |
+    | **Conhece mas nao usou** | Sabe que existe, mas nunca procurou | Basicas + Intencao + Confianca |
+    | **Usou o NAP** | Ja utilizou o servico | Basicas + Qualidade do atendimento |
+
+    ---
+
+    ## Como funciona o fluxo do questionario
+
+    O Google Forms tem **fluxo condicional**, ou seja:
+
+    Todos os alunos respondem:
+    - Pergunta de Necessidade
+    - Pergunta de Conforto  
+    - Pergunta de Crenca
+    - Pergunta de Suporte
+
+    Se o aluno respondeu que CONHECE o NAP, ele ve:
+    - Perguntas de Intencao
+    - Perguntas de Confianca
+
+    Se o aluno respondeu que USOU o NAP, ele ve:
+    - Perguntas de Qualidade (atendimento, recomendacao, etc.)
+
+    **Por isso algumas perguntas tem menos respostas que outras!** As medias sao calculadas APENAS com quem realmente respondeu cada pergunta. Os campos vazios sao ignorados automaticamente.
+
+    ---
+
+    ## O que significam os numeros do dashboard
+
+    | Numero | O que significa | O que e considerado BOM? |
+    |--------|-----------------|--------------------------|
+    | **Total** | Quantos alunos responderam | - |
+    | **Ja usaram** | Porcentagem que ja usou o NAP | Quanto maior, melhor |
+    | **Necessidade** | O quanto os alunos PRECISAM de apoio (0 a 10) | Baixo (menos de 5) |
+    | **Suporte** | O quanto eles PERCEBEM que a faculdade oferece apoio (0 a 10) | Alto (mais de 7) |
+    | **Gap** | Diferenca entre necessidade e suporte (Necessidade - Suporte) | Negativo ou zero |
+    | **Intencao** | O quanto gostariam de usar o NAP (0 a 10) | Alto (mais de 7) |
+    | **Conhecem** | Porcentagem que conhece mas nao usou | - |
+    | **Desconhecem** | Porcentagem que nunca ouviu falar | Baixo (menos de 20%) |
+
+    ---
+
+    ## Como calculamos o Gap?
+
+    Gap = Necessidade - Suporte
+
+    | Situacao | Contas | Resultado | Significado |
+    |----------|--------|-----------|-------------|
+    | Precisa muito, mas nao percebe apoio | 8 - 3 = | Gap +5 | PROBLEMA - Falta comunicacao |
+    | Precisa pouco e percebe muito apoio | 3 - 8 = | Gap -5 | IDEAL - Faculdade esta atendendo bem |
+    | Precisa e percebe na mesma medida | 6 - 6 = | Gap 0 | OK - Equilibrado |
+
+    ---
+
+    ## O que e um BOM resultado?
+
+    - **Suporte alto** (acima de 7) -> Os alunos percebem que a faculdade oferece apoio
+    - **Gap negativo** (Suporte maior que Necessidade) -> Situacao ideal
+    - **Intencao alta** (acima de 7) -> Os alunos querem usar o NAP
+    - **Poucos desconhecem o NAP** (menos de 20%) -> A divulgacao esta boa
+    - **Crenca alta** (acima de 8) -> Os alunos acreditam que o servico funciona
+
+    ## O que e um resultado de ALERTA?
+
+    - **Necessidade alta** (acima de 7) -> Muitos alunos precisam de apoio
+    - **Suporte baixo** (abaixo de 5) -> Os alunos nao percebem o apoio da faculdade
+    - **Gap positivo** (acima de 3) -> Falta de comunicacao sobre o NAP
+    - **Muitos desconhecem o NAP** (mais de 40%) -> Divulgacao esta fraca
+
+    ---
+
+    ## O que sao as correlacoes?
+
+    A **Matriz de Correlacao** mostra se duas perguntas andam juntas ou separadas.
+
+    | Correlacao | Se for negativa | Se for positiva |
+    |------------|-----------------|-----------------|
+    | **Necessidade ↔ Suporte** | Quem mais precisa e quem menos percebe apoio -> FALTA DE COMUNICACAO | Quem precisa percebe que tem apoio -> BOM |
+    | **Conforto ↔ Crenca** | - | Quem se sente confortavel acredita mais no servico -> ACOLHIMENTO FUNCIONA |
+
+    **Exemplo pratico:** Se a correlacao entre Necessidade e Suporte for negativa, isso significa que o servico existe mas os alunos nao estao sabendo. A solucao e **melhorar a comunicacao** sobre o NAP.
+
+    ---
+
+    ## Como usar o dashboard
+
+    1. **Filtros na lateral esquerda** -> Selecione campus, periodo, genero, semestre para focar em grupos especificos
+
+    2. **Numeros no topo** -> Visao geral dos principais indicadores (se voce aplicou filtros, eles se atualizam)
+
+    3. **Central de Alertas** -> O sistema ja identifica automaticamente se ha problemas
+
+    4. **Matriz de Correlacao** -> Mostra a relacao entre as perguntas (vermelho = andam juntas, azul = se opoem)
+
+    5. **Analise de Qualidade** -> Avaliacao de quem USOU o NAP (atendimento, recomendacao, etc.)
+
+    6. **Graficos** -> Comparacoes entre campi, evolucao por semestre, perfil dos alunos
+
+    ---
+
+    ## Sobre privacidade
+
+    - Todas as respostas foram **anonimizadas**
+    - E-mails e dados pessoais foram **removidos**
+    - Ninguem consegue identificar quem respondeu o que
+
+    ---
+
+    ## Resumo rapido
+
+    | Se voce quer saber... | Olhe para... | O que e bom... |
+    |-----------------------|---------------|----------------|
+    | Se os alunos precisam de apoio | **Necessidade** | Numero baixo (< 5) |
+    | Se eles percebem que a faculdade ajuda | **Suporte** | Numero alto (> 7) |
+    | Se a comunicacao esta boa | **Gap** | Numero negativo ou zero |
+    | Se eles querem usar o NAP | **Intencao** | Numero alto (> 7) |
+    | Se a divulgacao esta funcionando | **% Desconhecem** | Numero baixo (< 20%) |
+    | Se quem usou aprovou | **Analise de Qualidade** | Numeros altos (> 8) |
+
+    ---
+
+    ## Conclusao
+
+    Este dashboard foi construido para facilitar a visualizacao e interpretacao dos dados coletados. Com ele, e possivel identificar pontos fortes e fracos do NAP, alem de direcionar acoes para melhorar o servico e sua comunicacao com os alunos.
+    """)
 
 # ============================================================
 # AVISOS
@@ -88,20 +354,20 @@ st.subheader("⚠️ Central de Alertas")
 col_a1, col_a2 = st.columns(2)
 
 with col_a1:
-if gap > 3:
-    st.error(f"🔴 **Gap Crítico:** {gap:.1f} pontos entre necessidade e suporte")
-elif gap < -1:
-    st.success(f"🟢 **Gap positivo:** Suporte excede necessidade em {abs(gap):.1f} pontos")
-else:
-    st.info(f"🟡 Gap controlado: {gap:.1f} pontos")
+    if gap > 3:
+        st.error(f"🔴 **Gap Crítico:** {gap:.1f} pontos entre necessidade e suporte")
+    elif gap < -1:
+        st.success(f"🟢 **Gap positivo:** Suporte excede necessidade em {abs(gap):.1f} pontos")
+    else:
+        st.info(f"🟡 Gap controlado: {gap:.1f} pontos")
 
 with col_a2:
-if pct_nao > 40:
-    st.error(f"🔴 **Comunicação:** {pct_nao:.0f}% desconhecem o NAP")
-elif pct_nao > 20:
-    st.warning(f"🟡 **Atenção:** {pct_nao:.0f}% desconhecem o NAP")
-else:
-    st.success(f"🟢 {pct_nao:.0f}% desconhecem")
+    if pct_nao > 40:
+        st.error(f"🔴 **Comunicação:** {pct_nao:.0f}% desconhecem o NAP")
+    elif pct_nao > 20:
+        st.warning(f"🟡 **Atenção:** {pct_nao:.0f}% desconhecem o NAP")
+    else:
+        st.success(f"🟢 {pct_nao:.0f}% desconhecem")
 
 # ============================================================
 # MATRIZ DE CORRELAÇÃO - DIVIDIDA POR BLOCOS
